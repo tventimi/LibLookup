@@ -26,11 +26,8 @@
     "asn1js": "^3.0.6",
     "electron-squirrel-startup": "^1.0.1",
     "localtunnel": "^2.0.2",
-    "marc4js": "^0.0.10",
-    "marc8": "^0.0.4",
     "marcjs": "^3.0.2",
-    "marcrecord": "^1.4.0",
-    "node-zoom2": "^0.9.2"
+    "marcrecord": "^1.4.0"
   },
   "type": "module"
 }

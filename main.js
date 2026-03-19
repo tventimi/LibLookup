@@ -2,7 +2,6 @@ import { app, BrowserWindow, ipcMain } from 'electron/main';
 import { Z3950Client } from './Z3950Client.js';
 import { webserver } from './webserver/webserver.js';
 import { Marc } from 'marcjs'
-import marc8 from 'marc8'
 import * as readline from 'node:readline';
 import * as fs from 'node:fs';
 import * as path from 'path';

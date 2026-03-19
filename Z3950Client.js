@@ -1,6 +1,5 @@
 import net from 'net';
 import asn1js from 'asn1js';
-//import { Z3950schema } from './Z3950schema.js'
 
 const MESSAGE_SIZE = 0x4000000
 const BIB1_OBJID = '1.2.840.10003.3.1'
