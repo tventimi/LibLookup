@@ -73,18 +73,30 @@ app.whenReady().then(() => {
           const rec = Buffer.from(respBody,'binary')
           const marc = Marc.parse(rec, 'Iso2709');
           //writeStream.write(respBody)
-          var rec_formatted = "=LDR  " + marc.leader + "<br/>"
+          var rec_formatted = "<table class='marc'><tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
           marc.fields.forEach(f => {
-            rec_formatted += "="
-            f.forEach(sf => {
+            var tag = f[0]
+            rec_formatted += "<tr><td>" + tag + "</td><td>" 
+            var ind1 = ""
+            var ind2 = ""
+            var startIndex = 1
+            if(!tag.match(/^00/)) {
+              ind1 = f[1]
+              ind2 = f[2]
+              startIndex = 3
+            }
+            rec_formatted += ind1 + "</td><td>" + ind2 + "</td><td>"
+            for(var i = startIndex; i < f.length; i++) { 
+              var sf = f[i]
               if(sf.length == 1) {
                 rec_formatted += "$" 
               }   
               rec_formatted += sf + " "
-            })
-            rec_formatted += "<br/>"
-          })          
+            }
+            rec_formatted += "</td></tr>"
+          })           
         }
+        rec_formatted += "</table>"
         //resultsList += `${rec}`
         //if(queries.length > 0) {
         //  i++
