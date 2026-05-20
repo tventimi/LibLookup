@@ -15,20 +15,26 @@ export class webserver {
         cert: fs.readFileSync('./webserver/server.crt')
     };
 
-    constructor(content) {
+    constructor(filename) {
         const server = https.createServer(this.serverOptions, (req, res) => {
             if (req.method === 'OPTIONS') {
                 res.writeHead(204, this.headers);
                 res.end();
                 return;
             } else {
-                res.writeHead(200, this.headers);
-                res.end(content)
-                return
+                fs.readFile(filename, (err, data) => {
+                    if (err) {
+                        res.writeHead(404);
+                        res.end('404 Not Found');
+                    } else {
+                        res.end(data);
+                    }                
+                })
             }
+            return
         });
-        server.listen(3950, '127.0.0.1', () => {
-            console.log('Electron app listening for HTTPS calls on https://127.0.0.1:3950');
+        server.listen(3950, 'localhost', () => {
+            console.log('Electron app listening for HTTPS calls on https://localhost:3950');
         });
         return server
     }
