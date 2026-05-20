@@ -1,5 +1,6 @@
 import net from 'net';
 import asn1js from 'asn1js';
+import { create } from 'domain';
 
 const MESSAGE_SIZE = 0x4000000
 const BIB1_OBJID = '1.2.840.10003.3.1'
@@ -24,17 +25,20 @@ export class Z3950Client {
         this.dataBuffer = Buffer.alloc(0)
     }
 
-    connect(callback) {
+    initiateConnection() {
         this.client = net.createConnection({ 
                 port: this.port, 
                 host: this.host
             }, 
             () => {
-                console.log(`Connected to ${this.host} on port ${this.port}`);
                 var initRequest = createInitRequest(this.username, this.password)
                 this.client.write(new Uint8Array(initRequest.toBER()))
             }
         )
+    }
+
+    connect(callback) {
+        this.initiateConnection()
         this.client.on('data', (data) => {
             this.dataBuffer = Buffer.concat([this.dataBuffer, Buffer.from(data)])
             var response = new asn1js.fromBER(this.dataBuffer)
@@ -48,9 +52,11 @@ export class Z3950Client {
                 var respCode = response.result.idBlock.tagNumber
                 var respValue = ""
                 var respType = respCode
+                console.log(respCode)
                 switch(respCode) {
                     case 21:
-                        respType = 'initResponse'                    
+                        respType = 'initResponse'  
+                        console.log(`Connected to ${this.host} on port ${this.port}`);
                         break;
                     case 23:
                         respType = 'searchResponse'
@@ -88,6 +94,12 @@ export class Z3950Client {
         });
         this.client.on('error', (err) => {
             console.error('Socket error:', err);
+            if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
+                callback('error','timeout')
+            } else {
+                console.error('Other error:', err.message);
+                callback('error',err.message)
+            }
         });
     }
 
@@ -116,131 +128,122 @@ function createIdBlock(tagNumber) {
 }
     
 function createInitRequest(username, password) {
-    var auth = `${username}/${password}`
     var encoder = new TextEncoder()
-    return new asn1js.Constructed({
-        idBlock: createIdBlock(20),
-        value: [
-            new asn1js.Primitive({idBlock: createIdBlock(3), valueHex: new Uint8Array([0x00,0xE0]), unusedBits: 5}),
-            new asn1js.Primitive({idBlock: createIdBlock(4), valueHex: new Uint8Array([0x00,0xE9,0xA2])}),
-            new asn1js.Primitive({idBlock: createIdBlock(5), valueHex: new Uint8Array([0x04,0x00,0x00,0x00])}),
-            new asn1js.Primitive({idBlock: createIdBlock(6), valueHex: new Uint8Array([0x04,0x00,0x00,0x00])}),
-            new asn1js.Constructed({
-                idBlock: createIdBlock(7), 
-                value: [
-                    new asn1js.VisibleString({valueHex: encoder.encode(auth)})
-                ]
-            }),
-            new asn1js.Constructed({
-                idBlock: createIdBlock(201), 
-                value: [
-                    new asn1js.Sequence({
-                        value: [
-                            new asn1js.Constructed({
-                                idBlock: createIdBlock(4),
-                                value: [
-                                    new asn1js.ObjectIdentifier({value: UTF8_OBJID}),
-                                    new asn1js.Constructed({
-                                        idBlock: createIdBlock(0),
-                                        value: [
-                                            new asn1js.Constructed({
-                                                idBlock: createIdBlock(1),
-                                                value: [
-                                                   new asn1js.Constructed({
-                                                        idBlock: createIdBlock(1), 
-                                                        value: [
-                                                          new asn1js.Constructed({
-                                                                idBlock: createIdBlock(2), 
-                                                                value: [
-                                                                    new asn1js.ObjectIdentifier({
-                                                                        idBlock: createIdBlock(2), 
-                                                                        value: UCS_OBJID
-                                                                    }),
-                                                                ]
-                                                           })  
-                                                        ]
-                                                   }),
-                                                   new asn1js.Primitive({idBlock: createIdBlock(3), valueHex: new Uint8Array([0x01])}),                                                   
-                                                ]
-                                            })
-                                        ]
-                                    })
-                                ]
-                            })
-                        ]
-                    })
-                ]
-            })
-        ]
-    })
+    var auth = new asn1js.VisibleString({valueHex: encoder.encode(`${username}/${password}`)})
+    var utf8obj = new asn1js.ObjectIdentifier({value: UTF8_OBJID})
+    var ucsobj = {value: new asn1js.ObjectIdentifier({
+                    idBlock: createIdBlock(2), 
+                    value: UCS_OBJID
+                })}
+    var req = createASN1object({id: 20, value: [
+        {id: 3, value: 0xE0, byteLength: 2, unusedBits: 5}, //Z39.50 version
+        {id: 4, value: 0xE9A2, byteLength: 3}, //Options
+        {id: 5, value: MESSAGE_SIZE}, //Preferred message size
+        {id: 6, value: MESSAGE_SIZE}, //Exceptional message size
+        {id: 7, value: [{value: auth}]}, //authorization
+        {id: 201, value: [{value: [ //other information sequence
+            {id: 4, value: [ //external definition
+                {value: utf8obj}, 
+                {id: 0, value: [
+                    {id: 1, value: [
+                        {id: 1, value: [
+                            {id: 2, value: [ucsobj]}
+                        ]}
+                    ]}
+                ]}
+            ]}
+        ]}]}
+    ]})
+    return req
 }
 
 function createCloseRequest() {
-    return new asn1js.Constructed({
-        idBlock: createIdBlock(48),
-        value: [
-            new asn1js.Primitive({idBlock: createIdBlock(211), value: 0})
-        ]
-    })
+    var req = createASN1object({id: 48, value: [{id: 211, value: 0}]})
+    return req    
 }
     
 function createSearchRequest(database, rsid, queryString) {
     var encoder = new TextEncoder()
-    return new asn1js.Constructed({
-        idBlock: createIdBlock(22),
-        value: [
-            new asn1js.Primitive({idBlock: createIdBlock(13), valueHex: new Uint8Array([0x00])}),
-            new asn1js.Primitive({idBlock: createIdBlock(14), valueHex: new Uint8Array([0x01])}),
-            new asn1js.Primitive({idBlock: createIdBlock(15), valueHex: new Uint8Array([0x00])}),
-            new asn1js.Primitive({idBlock: createIdBlock(16), valueHex: new Uint8Array([0x01])}),
-            new asn1js.Primitive({idBlock: createIdBlock(17), valueHex: encoder.encode(rsid)}),
-            new asn1js.Constructed({idBlock: createIdBlock(18), 
-                value: [
-                    new asn1js.Primitive({idBlock: createIdBlock(105), valueHex: encoder.encode(database)})
-                ]}),
-            new asn1js.Constructed({idBlock: createIdBlock(21),
-                value: [
-                    new asn1js.Constructed({idBlock: createIdBlock(1), 
-                        value: [
-                            new asn1js.ObjectIdentifier({value: BIB1_OBJID}),
-                            new asn1js.Constructed({idBlock: createIdBlock(0),
-                                value: [
-                                    new asn1js.Constructed({idBlock: createIdBlock(102), 
-                                        value: [
-                                            new asn1js.Constructed({idBlock: createIdBlock(44),
-                                                value: [
-                                                    new asn1js.Sequence({
-                                                        value: [
-                                                            new asn1js.Primitive({idBlock: createIdBlock(120), valueHex: new Uint8Array([0x01])}),
-                                                            new asn1js.Primitive({idBlock: createIdBlock(121), valueHex: new Uint8Array([0x0C])})
-                                                        ]
-                                                    })
-                                                ]
-                                            }),
-                                            new asn1js.Primitive({idBlock: createIdBlock(45),
-                                                valueHex: encoder.encode(queryString)
-                                            })
-                                        ]
-                                    })
-                                ]
-                            })
-                        ]
-                    })
-                ]
-            })
-        ]
-    })
+    var bib1object = new asn1js.ObjectIdentifier({value: BIB1_OBJID})
+    var req = createASN1object({id: 22, value: [
+        {id: 13, value: 0}, //Small set lower bound
+        {id: 14, value: 1}, //Large set upper bound
+        {id: 15, value: 0}, //Medium set present number
+        {id: 16, value: 1}, //Replace indicator
+        {id: 17, value: encoder.encode(rsid)}, //Result set ID
+        {id: 18, value: [ //Database name(s)
+            {id: 105, value: encoder.encode(database)}
+        ]},
+        {id: 21, value: [ //Query
+            {id: 1, value: [ //RPN Query
+                {value: bib1object},
+                {id: 0, value: [ //operand
+                    {id: 102, value: [ //attributes plus term
+                        {id: 44, value: [ {value: [ // attribute sequence
+                            {id: 120, value: 1}, //attribute type (1 = use)
+                            {id: 121, value: 12} //attribute value (12 = record ID)
+                        ]} ]},
+                        {id: 45, value: encoder.encode(queryString)} // search term
+                    ]}
+                ]}
+            ]}
+        ]}
+    ]})
+    return req
 }
 
 function createPresentRequest(rsid, recno) {
     var encoder = new TextEncoder()
     var marcObj = new asn1js.ObjectIdentifier({value: USMARC_OBJID})
-    return new asn1js.Constructed({idBlock: createIdBlock(24),
-        value: [
-            new asn1js.Primitive({idBlock: createIdBlock(31), valueHex: encoder.encode(rsid)}),
-            new asn1js.Primitive({idBlock: createIdBlock(30), valueHex: new Uint8Array([recno])}),
-            new asn1js.Primitive({idBlock: createIdBlock(29), valueHex: new Uint8Array([0x01])}),
-            new asn1js.Primitive({idBlock: createIdBlock(104), valueHex: marcObj.valueBlock.toBER()})
-        ]
-    })
+    var req = createASN1object({id: 24, value: [
+        {id: 31, value: encoder.encode(rsid)}, //result set ID
+        {id: 30, value: recno}, //record number
+        {id: 29, value: 1},  //number of records to return
+        {id: 104, value: marcObj.valueBlock.toBER()} //USMARC format
+    ]})
+    return req
+    
 }
+
+function createASN1object(jsonOBJ) {
+    var idBlock = createIdBlock(jsonOBJ?.id)
+    var valueType = typeof(jsonOBJ.value)
+    if(Array.isArray(jsonOBJ.value)) {
+        var valueArray = Object.values(jsonOBJ.value)
+        var asn1values = []
+        for(var i = 0; i < valueArray.length; i++) {
+            asn1values.push(createASN1object(valueArray[i]))
+        }
+        if(idBlock.tagNumber === undefined) {
+            return new asn1js.Sequence({value: asn1values})
+        } else {
+            return new asn1js.Constructed({idBlock: idBlock, value: asn1values})
+        }
+    } else {
+        var newValue = jsonOBJ.value
+        var unusedBits = 0
+        if(jsonOBJ.unusedBits !== undefined) {
+            unusedBits = jsonOBJ.unusedBits
+        }
+
+        if(valueType == 'number') {
+            var byteLength = Math.ceil(Math.log2(newValue + 1) / 8);
+            if(jsonOBJ.byteLength !== undefined) {
+                byteLength = jsonOBJ.byteLength
+            }
+            byteLength = (byteLength > 0) ? byteLength : 1;
+             var byteArray = []
+            for(var i = 0; i < byteLength; i++) {
+                byteArray.unshift((newValue >> (i*8)) & 0xFF)
+            }
+            newValue = new Uint8Array(byteArray)     
+        }
+        if(idBlock.tagNumber === undefined) {
+            return newValue
+        } else {
+            return new asn1js.Primitive({idBlock: idBlock, valueHex: newValue, unusedBits: unusedBits})
+        }
+    } 
+}
+
+
