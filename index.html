@@ -15,18 +15,20 @@
     <title>LibLookup</title>
   </head>
   <body>
+    <h3>LibLookup</h3>
     <form id="queryForm">
-      <p><label>Enter Query:</label></p>
+      <p><label>Enter ID:</label></p>
       <p>
       <input 
         title="Z39.50 query string" 
         placeholder='OCLC #' 
         type="text" 
         id="queryString"
+        name="q"
         size="20"
       />
       </p>
-      <p><button id="submit" type="submit">Submit</button></p>
+      <p><button id="submit" type="submit">Search</button></p>
     </form>
     <p id='results'>
       <script src ="./renderer.js"></script>
