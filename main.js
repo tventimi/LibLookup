@@ -6,6 +6,7 @@ import * as readline from 'node:readline';
 import * as fs from 'node:fs';
 import * as path from 'path';
 import { fileURLToPath } from 'node:url';
+import { shell } from 'electron'
 
 const port = 210
 const host = 'zcat.oclc.org'
@@ -33,7 +34,7 @@ const createWindow = (resultsList) => {
 
 
   win.loadFile('index.html').then(() => {
-    const server = new webserver(resultsList)
+    const server = new webserver("index.html")
     //win.webContents.send('set-results',resultsList)
   })  
 }
@@ -58,8 +59,18 @@ app.whenReady().then(() => {
     //console.log(respType)
     switch(respType) {
       case 'initResponse':
-        createWindow()
+        if(!win) {
+          createWindow()
+        }        
+        //shell.openExternal('https://localhost:3950')
         //z3950client.query(i, queries.shift())
+        break;
+      case 'error':
+        console.log(respBody)
+        if(respBody == 'timeout') {
+          z3950client.disconnect()
+          z3950client.initiateConnection()
+        }
         break;
       case 'searchResponse':
         console.log(`${respBody} results found`)
@@ -81,9 +92,9 @@ app.whenReady().then(() => {
             var ind2 = ""
             var startIndex = 1
             if(!tag.match(/^00/)) {
-              ind1 = f[1]
-              ind2 = f[2]
-              startIndex = 3
+              ind1 = f[1][0]
+              ind2 = f[1][1]
+              startIndex = 2
             }
             rec_formatted += ind1 + "</td><td>" + ind2 + "</td><td>"
             for(var i = startIndex; i < f.length; i++) { 
@@ -95,8 +106,8 @@ app.whenReady().then(() => {
             }
             rec_formatted += "</td></tr>"
           })           
+          rec_formatted += "</table>"          
         }
-        rec_formatted += "</table>"
         //resultsList += `${rec}`
         //if(queries.length > 0) {
         //  i++
@@ -113,6 +124,7 @@ app.whenReady().then(() => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
+    
   }
 })
   
