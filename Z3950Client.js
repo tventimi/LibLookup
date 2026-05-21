@@ -170,6 +170,16 @@ function createCloseRequest() {
 function createSearchRequest(database, rsid, queryString) {
     var encoder = new TextEncoder()
     var bib1object = new asn1js.ObjectIdentifier({value: BIB1_OBJID})
+
+    var attrType = 1
+    var attrValue = 12
+    var m = /@attr ([0-9]+)=([0-9]+) (.*)/.exec(queryString)
+    if(m) {
+        attrType = parseInt(m[1])
+        attrValue = parseInt(m[2])
+        queryString = m[3]
+    }
+
     var req = createASN1object({id: 22, value: [
         {id: 13, value: 0}, //Small set lower bound
         {id: 14, value: 1}, //Large set upper bound
@@ -185,8 +195,8 @@ function createSearchRequest(database, rsid, queryString) {
                 {id: 0, value: [ //operand
                     {id: 102, value: [ //attributes plus term
                         {id: 44, value: [ {value: [ // attribute sequence
-                            {id: 120, value: 1}, //attribute type (1 = use)
-                            {id: 121, value: 12} //attribute value (12 = record ID)
+                            {id: 120, value: attrType}, //attribute type (1 = use)
+                            {id: 121, value: attrValue} //attribute value (12 = record ID)
                         ]} ]},
                         {id: 45, value: encoder.encode(queryString)} // search term
                     ]}
@@ -202,7 +212,7 @@ function createPresentRequest(rsid, recno) {
     var marcObj = new asn1js.ObjectIdentifier({value: USMARC_OBJID})
     var req = createASN1object({id: 24, value: [
         {id: 31, value: encoder.encode(rsid)}, //result set ID
-        {id: 30, value: recno}, //record number
+        {id: 30, value: recno}, //starting record number
         {id: 29, value: 1},  //number of records to return
         {id: 104, value: marcObj.valueBlock.toBER()} //USMARC format
     ]})
