@@ -8,11 +8,25 @@ import * as path from 'path';
 import { fileURLToPath } from 'node:url';
 import { shell } from 'electron'
 
-const port = 210
-const host = 'zcat.oclc.org'
-const database = 'OLUCWorldCat'
-const username = '100062493'
-const password = 'catalog'
+const catalogs = {
+  "WorldCat": {
+    host: 'zcat.oclc.org',
+    database: 'OLUCWorldCat',
+    username: '100062493',
+    password: 'catalog',
+    port: 210
+  },
+  "AlmaProd": {
+    host: 'princeton.alma.exlibrisgroup.com',
+    database: '01PRI_INST',
+    port: 1921
+  },
+  "AlmaSand": {
+    host: 'princeton-psb.alma.exlibrisgroup.com',
+    database: '01PRI_INST',
+    port: 1921
+  }
+}
 
 const inputFile = 'input/testdata.txt'
 const outputFile = 'output/output.mrc'
@@ -52,8 +66,21 @@ app.whenReady().then(() => {
     queries.push(line)
   });
   const writeStream = fs.createWriteStream(outputFile);  
-  */
+  */ 
+  z3950Connect('WorldCat')
+})
+
+function z3950Connect(catalog) {
   var i = 1
+  var host = catalogs[catalog].host
+  var port = catalogs[catalog].port
+  var database = catalogs[catalog].database
+  var username = catalogs[catalog].username ?? ""
+  var password = catalogs[catalog].password ?? ""
+
+  if(z3950client?.connected) {
+    z3950client.disconnect()
+  }
   z3950client = new Z3950Client(port, host, database, username, password)
   z3950client.connect((respType, respBody) => {
     //console.log(respType)
@@ -119,7 +146,7 @@ app.whenReady().then(() => {
         break;
       }
   })
-})
+}
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -133,6 +160,12 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+ipcMain.on('connect-channel', (event, catalog) => {
+  console.log('Received catalog from renderer:', catalog);
+  win.webContents.send('set-results',"")
+  z3950Connect(catalog)
 })
 
 ipcMain.on('form-submission-channel', (event, data) => {

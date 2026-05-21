@@ -6,7 +6,7 @@ const MESSAGE_SIZE = 0x4000000
 const BIB1_OBJID = '1.2.840.10003.3.1'
 const USMARC_OBJID = '1.2.840.10003.5.10'
 const UTF8_OBJID = '1.2.840.10003.15.3'
-const UCS_OBJID = '1.0.10646.1.0.8'
+const UCS_OBJID = [0x28, 0xD3, 0x16, 0x01, 0x00, 0x08]
 
 export class Z3950Client {
     port = 0
@@ -29,16 +29,17 @@ export class Z3950Client {
         this.client = net.createConnection({ 
                 port: this.port, 
                 host: this.host
-            }, 
-            () => {
-                var initRequest = createInitRequest(this.username, this.password)
-                this.client.write(new Uint8Array(initRequest.toBER()))
             }
         )
     }
 
     connect(callback) {
         this.initiateConnection()
+        this.client.on('connect', () => {
+            console.log('Connected to ' + this.client.remoteAddress + ':' + this.client.remotePort)
+            var initRequest = createInitRequest(this.username, this.password)
+            this.client.write(new Uint8Array(initRequest.toBER()))
+        })
         this.client.on('data', (data) => {
             this.dataBuffer = Buffer.concat([this.dataBuffer, Buffer.from(data)])
             var response = new asn1js.fromBER(this.dataBuffer)
@@ -129,32 +130,36 @@ function createIdBlock(tagNumber) {
     
 function createInitRequest(username, password) {
     var encoder = new TextEncoder()
-    var auth = new asn1js.VisibleString({valueHex: encoder.encode(`${username}/${password}`)})
     var utf8obj = new asn1js.ObjectIdentifier({value: UTF8_OBJID})
-    var ucsobj = {value: new asn1js.ObjectIdentifier({
-                    idBlock: createIdBlock(2), 
-                    value: UCS_OBJID
-                })}
-    var req = createASN1object({id: 20, value: [
-        {id: 3, value: 0xE0, byteLength: 2, unusedBits: 5}, //Z39.50 version
-        {id: 4, value: 0xE9A2, byteLength: 3}, //Options
-        {id: 5, value: MESSAGE_SIZE}, //Preferred message size
-        {id: 6, value: MESSAGE_SIZE}, //Exceptional message size
-        {id: 7, value: [{value: auth}]}, //authorization
-        {id: 201, value: [{value: [ //other information sequence
-            {id: 4, value: [ //external definition
-                {value: utf8obj}, 
-                {id: 0, value: [
+    var ucsobj = new Uint8Array(UCS_OBJID)
+    var msgElements = []
+    msgElements.push({id: 3, value: 0xE0, byteLength: 2, unusedBits: 5}) //Z39.50 version
+    msgElements.push({id: 4, value: 0xE9A2, byteLength: 3}) //Options)
+    msgElements.push({id: 5, value: MESSAGE_SIZE}) //Preferred message size
+    msgElements.push({id: 6, value: MESSAGE_SIZE}) //Exceptional message size
+    if(username && password) {
+        var auth = new asn1js.VisibleString({valueHex: encoder.encode(`${username}/${password}`)})
+        msgElements.push({id: 7, value: [{value: auth}]}) //authorization
+    }
+    
+    msgElements.push({id: 201, value: [{value: [ //other information sequence
+        {id: 4, value: [ //external definition
+            {value: utf8obj}, //UTF8
+            {id: 0, value: [
+                {id: 1, value: [
                     {id: 1, value: [
-                        {id: 1, value: [
-                            {id: 2, value: [ucsobj]}
+                        {id: 2, value: [
+                            {id: 2, value: ucsobj} //UCS
                         ]}
-                    ]}
-                ]}
+                    ]},
+                    {id: 3, value: 1}
+                ]}                
             ]}
-        ]}]}
-    ]})
-    return req
+        ]}
+    ]}]})
+    
+
+    return createASN1object({id: 20, value: msgElements})
 }
 
 function createCloseRequest() {
@@ -226,13 +231,14 @@ function createASN1object(jsonOBJ) {
             unusedBits = jsonOBJ.unusedBits
         }
 
-        if(valueType == 'number') {
+        if(valueType == 'number') {          
             var byteLength = Math.ceil(Math.log2(newValue + 1) / 8);
             if(jsonOBJ.byteLength !== undefined) {
                 byteLength = jsonOBJ.byteLength
             }
             byteLength = (byteLength > 0) ? byteLength : 1;
-             var byteArray = []
+            
+            var byteArray = []            
             for(var i = 0; i < byteLength; i++) {
                 byteArray.unshift((newValue >> (i*8)) & 0xFF)
             }

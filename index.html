@@ -17,11 +17,15 @@
   <body>
     <h3>LibLookup</h3>
     <form id="queryForm">
-      <p><label>Enter ID:</label></p>
-      <p>
+      <p>Catalog:
+        <select title="Catalog" name="catalog" id="catalog">
+          <option value="WorldCat">WorldCat</option>
+          <option value="AlmaProd">Alma Production</option>
+          <option value="AlmaSand">Alma Sandbox</option>
+      </select>
       <input 
-        title="Z39.50 query string" 
-        placeholder='OCLC #' 
+        title="Z390 query string" 
+        placeholder='Record #' 
         type="text" 
         id="queryString"
         name="q"
