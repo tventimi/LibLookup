@@ -25,6 +25,21 @@ const catalogs = {
     host: 'princeton-psb.alma.exlibrisgroup.com',
     database: '01PRI_INST',
     port: 1921
+  },
+  "LCCAT": {
+    host: 'lx2.loc.gov',
+    database: 'LCDB',
+    port: 210 
+  },
+  "LCNAF": {
+    host: 'lx2.loc.gov',
+    database: 'NAF',
+    port: 210 
+  },
+  "LCSAF": {
+    host: 'lx2.loc.gov',
+    database: 'SAF',
+    port: 210 
   }
 }
 

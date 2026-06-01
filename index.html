@@ -22,14 +22,17 @@
           <option value="WorldCat">WorldCat</option>
           <option value="AlmaProd">Alma Production</option>
           <option value="AlmaSand">Alma Sandbox</option>
+          <option value="LCCAT">LC Catalog</option>
+          <option value="LCNAF">LC Name Authority File</option>
+          <option value="LCSAF">LC Subject Authority File</option>
       </select>
       <input 
-        title="Z390 query string" 
-        placeholder='Record #' 
+        title="Z39.50 query string" 
+        placeholder='Keyword or Z39.50 query string (e.g. "@attr 1=4 Shakespeare")' 
         type="text" 
         id="queryString"
         name="q"
-        size="20"
+        size="50"
       />
       </p>
       <p><button id="submit" type="submit">Search</button></p>

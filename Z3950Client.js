@@ -172,7 +172,7 @@ function createSearchRequest(database, rsid, queryString) {
     var bib1object = new asn1js.ObjectIdentifier({value: BIB1_OBJID})
 
     var attrType = 1
-    var attrValue = 12
+    var attrValue = 1016
     var m = /@attr ([0-9]+)=([0-9]+) (.*)/.exec(queryString)
     if(m) {
         attrType = parseInt(m[1])
