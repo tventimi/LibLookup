@@ -71,8 +71,7 @@ const createWindow = () => {
       'Access-Control-Allow-Origin': '*', 
       'Access-Control-Allow-Headers': '*',
       'Access-Control-Allow-Methods': 'OPTIONS, POST, GET',
-      'Access-Control-Max-Age': 2592000, // 30 days
-      'Content-Type': 'text/html'
+      'Access-Control-Max-Age': 2592000 // 30 days
     }; 
     
     const serverOptions = {
@@ -103,6 +102,10 @@ const createWindow = () => {
                 output += rec
                 res.end(output)
               })
+              if(catalog != catalogID) {
+                catalogID = catalog
+                z3950Connect(catalogID)
+              }
               z3950search(resultSetID, query)
             } else {
               res.end(output)
@@ -220,13 +223,15 @@ function z3950Connect(catalog) {
 function z3950search(resultSetID, query) {
   if(!z3950client.isConnected()) {
     z3950Connect(catalogID)
+    var interval = setInterval(() => {
+      if(z3950client.isConnected()) {
+          clearInterval(interval)
+          z3950client.query(resultSetID, query)
+      }
+    },1000)
+  } else {
+    z3950client.query(resultSetID, query)
   }
-  var interval = setInterval(() => {
-    if(z3950client.isConnected()) {
-        clearInterval(interval)
-        z3950client.query(resultSetID, query)
-    }
-  },1000)
 }
 
 app.on('activate', () => {
