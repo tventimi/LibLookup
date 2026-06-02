@@ -1,12 +1,14 @@
-import { app, BrowserWindow, ipcMain } from 'electron/main';
+import { app, BrowserWindow, ipcMain } from 'electron/main'
 import { Z3950Client } from './Z3950Client.js';
-import { webserver } from './webserver/webserver.js';
+import { webserver } from './webserver/webserver.js'
 import { Marc } from 'marcjs'
 import * as readline from 'node:readline';
 import * as fs from 'node:fs';
 import * as path from 'path';
+import * as https from 'https'
 import { fileURLToPath } from 'node:url';
 import { shell } from 'electron'
+import { Subject }  from 'rxjs'
 
 const catalogs = {
   "WorldCat": {
@@ -47,10 +49,12 @@ const inputFile = 'input/testdata.txt'
 const outputFile = 'output/output.mrc'
 
 var queries = []
+var results = new Subject()
+var resultSetID = ""
 var win
 var z3950client
 
-const createWindow = (resultsList) => {  
+const createWindow = () => {  
   win = new BrowserWindow({
     width: 800,
     height: 600,
@@ -63,7 +67,54 @@ const createWindow = (resultsList) => {
 
 
   win.loadFile('index.html').then(() => {
-    const server = new webserver("index.html")
+    const headers = {
+      'Access-Control-Allow-Origin': '*', 
+      'Access-Control-Allow-Headers': '*',
+      'Access-Control-Allow-Methods': 'OPTIONS, POST, GET',
+      'Access-Control-Max-Age': 2592000, // 30 days
+      'Content-Type': 'text/html'
+    }; 
+    
+    const serverOptions = {
+      key: fs.readFileSync('./webserver/server.key'),
+      cert: fs.readFileSync('./webserver/server.crt')
+    };
+    
+    const server = https.createServer(serverOptions, (req, res) => {    
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, headers);
+        res.end();
+        return;
+      } else {
+        var url = new URL(req.url, `https://${req.headers.host}`)
+        var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
+        fs.readFile(filename, (err, data) => {  
+          if (err) {
+            res.writeHead(404);
+            res.end('404 Not Found');
+          } else {  
+            res.writeHead(200);
+            var output = data
+            var catalog = url.searchParams.get('catalog')
+            var query = url.searchParams.get('q')
+            if(catalog && query) {
+              resultSetID = "WEB1"
+              results.subscribe(rec => {
+                output += rec
+                res.end(output)
+              })
+              z3950client.query(resultSetID, query)
+            } else {
+              res.end(output)
+            }
+          }          
+        })   
+      }             
+    })
+    server.listen(3950, 'localhost', () => {
+      console.log('Electron app listening for HTTPS calls on https://localhost:3950');
+    });
+    //new webserver("index.html")
     //win.webContents.send('set-results',resultsList)
   })  
 }
@@ -116,20 +167,20 @@ function z3950Connect(catalog) {
         break;
       case 'searchResponse':
         console.log(`${respBody} results found`)
-        z3950client.getRecord(i, 1)
+        z3950client.getRecord(resultSetID, 1)
         break;
       case 'presentResponse':
         var rec = ""
         if(respBody == "") {
           rec = "No record found."
         } else {
-          const rec = Buffer.from(respBody,'binary')
-          const marc = Marc.parse(rec, 'Iso2709');
+          const recBinary = Buffer.from(respBody,'binary')
+          const marc = Marc.parse(recBinary, 'Iso2709');
           //writeStream.write(respBody)
-          var rec_formatted = "<table class='marc'><tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
+          rec = "<table class='marc'><tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
           marc.fields.forEach(f => {
             var tag = f[0]
-            rec_formatted += "<tr><td>" + tag + "</td><td>" 
+            rec += "<tr><td>" + tag + "</td><td>" 
             var ind1 = ""
             var ind2 = ""
             var startIndex = 1
@@ -138,17 +189,17 @@ function z3950Connect(catalog) {
               ind2 = f[1][1]
               startIndex = 2
             }
-            rec_formatted += ind1 + "</td><td>" + ind2 + "</td><td>"
+            rec += ind1 + "</td><td>" + ind2 + "</td><td>"
             for(var i = startIndex; i < f.length; i++) { 
               var sf = f[i]
               if(sf.length == 1) {
-                rec_formatted += "$" 
+                rec += "$" 
               }   
-              rec_formatted += sf + " "
+              rec += sf + " "
             }
-            rec_formatted += "</td></tr>"
+            rec += "</td></tr>"
           })           
-          rec_formatted += "</table>"          
+          rec += "</table>"         
         }
         //resultsList += `${rec}`
         //if(queries.length > 0) {
@@ -156,7 +207,10 @@ function z3950Connect(catalog) {
         //  z3950client.query(i, queries.shift())
         //} else {
           //z3950client.disconnect()
-          win.webContents.send('set-results',rec_formatted)
+          results.next(rec)
+          if(resultSetID.startsWith("APP")) {
+            win.webContents.send('set-results',results[0])
+          }
         //}
         break;
       }
@@ -186,6 +240,6 @@ ipcMain.on('connect-channel', (event, catalog) => {
 ipcMain.on('form-submission-channel', (event, data) => {
     var i = 1
     queries = [data.queryString]
-    var resultsList = ""    
-    z3950client.query(i, data.queryString)
+    resultSetID = "APP1"
+    z3950client.query(resultSetID, data.queryString)
 });
