@@ -132,6 +132,11 @@ app.whenReady().then(() => {
   });
   const writeStream = fs.createWriteStream(outputFile);  
   */ 
+  results.subscribe(rec => {
+    if(resultSetID.startsWith("APP")) {
+      win.webContents.send('set-results',rec)
+    }
+  })
   z3950Connect('WorldCat')
 })
 
@@ -205,11 +210,9 @@ function z3950Connect(catalog) {
         //  i++
         //  z3950client.query(i, queries.shift())
         //} else {
-          //z3950client.disconnect()
+          //z3950client.disconnect()          
           results.next(rec)
-          if(resultSetID.startsWith("APP")) {
-            win.webContents.send('set-results',results[0])
-          }
+          
         //}
         break;
       }
