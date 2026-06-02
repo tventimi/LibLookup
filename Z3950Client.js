@@ -33,6 +33,10 @@ export class Z3950Client {
         )
     }
 
+    isConnected() {
+        return (this.client?.readyState === 'open')
+    }
+
     connect(callback) {
         this.initiateConnection()
         this.client.on('connect', () => {
@@ -92,7 +96,7 @@ export class Z3950Client {
         });
         this.client.on('close', () => {
             console.log('Connection closed');
-        });
+        });        
         this.client.on('error', (err) => {
             console.error('Socket error:', err);
             if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
@@ -104,13 +108,18 @@ export class Z3950Client {
         });
     }
 
+    reconnect() {
+        console.log('Reconnecting...')
+        this.client.connect()
+    }
+
     disconnect() {
         console.log(`Closing connection`);
         var closeRequest = createCloseRequest()
         this.client.write(new Uint8Array(closeRequest.toBER()))
     }
 
-    query(resultsetid, queryString) {
+    query(resultsetid, queryString) {        
         console.log(`Sending query '${queryString}' (result set ${resultsetid})`)
         var searchRequest = createSearchRequest(this.database, resultsetid, queryString)
         this.resultsetid++

@@ -50,6 +50,7 @@ const outputFile = 'output/output.mrc'
 var queries = []
 var results = new Subject()
 var resultSetID = ""
+var catalogID = "WorldCat"
 var win
 var z3950client
 
@@ -102,7 +103,7 @@ const createWindow = () => {
                 output += rec
                 res.end(output)
               })
-              z3950client.query(resultSetID, query)
+              z3950search(resultSetID, query)
             } else {
               res.end(output)
             }
@@ -137,7 +138,7 @@ app.whenReady().then(() => {
       win.webContents.send('set-results',rec)
     }
   })
-  z3950Connect('WorldCat')
+  z3950Connect(catalogID)
 })
 
 function z3950Connect(catalog) {
@@ -148,7 +149,7 @@ function z3950Connect(catalog) {
   var username = catalogs[catalog].username ?? ""
   var password = catalogs[catalog].password ?? ""
 
-  if(z3950client?.connected) {
+  if(z3950client?.isConnected()) {
     z3950client.disconnect()
   }
   z3950client = new Z3950Client(port, host, database, username, password)
@@ -159,14 +160,11 @@ function z3950Connect(catalog) {
         if(!win) {
           createWindow()
         }        
-        //shell.openExternal('https://localhost:3950')
-        //z3950client.query(i, queries.shift())
         break;
       case 'error':
         console.log(respBody)
         if(respBody == 'timeout') {
-          z3950client.disconnect()
-          z3950client.initiateConnection()
+          z3950client.reconnect()
         }
         break;
       case 'searchResponse':
@@ -219,6 +217,18 @@ function z3950Connect(catalog) {
   })
 }
 
+function z3950search(resultSetID, query) {
+  if(!z3950client.isConnected()) {
+    z3950Connect(catalogID)
+  }
+  var interval = setInterval(() => {
+    if(z3950client.isConnected()) {
+        clearInterval(interval)
+        z3950client.query(resultSetID, query)
+    }
+  },1000)
+}
+
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
@@ -236,12 +246,13 @@ app.on('window-all-closed', () => {
 ipcMain.on('connect-channel', (event, catalog) => {
   console.log('Received catalog from renderer:', catalog);
   win.webContents.send('set-results',"")
-  z3950Connect(catalog)
+  catalogID = catalog
+  z3950Connect(catalogID)
 })
 
 ipcMain.on('form-submission-channel', (event, data) => {
     var i = 1
     queries = [data.queryString]
     resultSetID = "APP1"
-    z3950client.query(resultSetID, data.queryString)
+    z3950search(resultSetID, data.queryString)
 });
