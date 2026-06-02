@@ -17,6 +17,13 @@ const catalogs = {
     password: 'catalog',
     port: 210
   },
+  "OCLCAuthorities": {
+    host: 'zcat.oclc.org',
+    database: 'OCLCAuthoritiesLC',
+    username: '100062493',
+    password: 'catalog',
+    port: 210
+  },
   "AlmaProd": {
     host: 'princeton.alma.exlibrisgroup.com',
     database: '01PRI_INST',
@@ -93,7 +100,10 @@ const createWindow = () => {
             res.end('404 Not Found');
           } else {  
             res.writeHead(200, headers);
-            var output = data
+            var output = data.toString()
+            if(filename === 'index.html') {
+                output = output.replace('renderer.js', 'webrenderer.js')
+            }
             var catalog = url.searchParams.get('catalog')
             var query = url.searchParams.get('q')
             if(catalog && query) {
@@ -117,25 +127,10 @@ const createWindow = () => {
     server.listen(3950, 'localhost', () => {
       console.log('Electron app listening for HTTPS calls on https://localhost:3950');
     });
-    //new webserver("index.html")
-    //win.webContents.send('set-results',resultsList)
   })  
 }
 
 app.whenReady().then(() => {
-  /*
-  var resultsList = ""
-  
-  const rl = readline.createInterface({
-    input: fs.createReadStream(inputFile),
-          crlfDelay: Infinity
-        });
-
-  rl.on('line', (line) => {
-    queries.push(line)
-  });
-  const writeStream = fs.createWriteStream(outputFile);  
-  */ 
   results.subscribe(rec => {
     if(resultSetID.startsWith("APP")) {
       win.webContents.send('set-results',rec)
@@ -181,7 +176,6 @@ function z3950Connect(catalog) {
         } else {
           const recBinary = Buffer.from(respBody,'binary')
           const marc = Marc.parse(recBinary, 'Iso2709');
-          //writeStream.write(respBody)
           rec = "<table class='marc'><tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
           marc.fields.forEach(f => {
             var tag = f[0]
@@ -205,16 +199,8 @@ function z3950Connect(catalog) {
             rec += "</td></tr>"
           })           
           rec += "</table>"         
-        }
-        //resultsList += `${rec}`
-        //if(queries.length > 0) {
-        //  i++
-        //  z3950client.query(i, queries.shift())
-        //} else {
-          //z3950client.disconnect()          
-          results.next(rec)
-          
-        //}
+        }        
+        results.next(rec)   
         break;
       }
   })
