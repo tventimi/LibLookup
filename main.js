@@ -93,7 +93,7 @@ const createWindow = () => {
             res.writeHead(404);
             res.end('404 Not Found');
           } else {  
-            res.writeHead(200);
+            res.writeHead(200, headers);
             var output = data
             var catalog = url.searchParams.get('catalog')
             var query = url.searchParams.get('q')
