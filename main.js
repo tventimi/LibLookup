@@ -139,6 +139,59 @@ app.whenReady().then(() => {
   z3950Connect(catalogID)
 })
 
+function z3950callback(respType, respBody) {
+  switch(respType) {
+    case 'initResponse':
+      if(!win) {
+        createWindow()
+      }        
+      break;
+    case 'error':
+      console.log(respBody)
+      if(respBody == 'timeout') {
+        //z3950client.reconnect(z3950callback)
+      }
+      break;
+    case 'searchResponse':
+      console.log(`${respBody} results found`)
+      z3950client.getRecord(resultSetID, 1)
+      break;
+    case 'presentResponse':
+      var rec = ""
+      if(respBody == "") {
+        rec = "No record found."
+      } else {
+        const recBinary = Buffer.from(respBody,'binary')
+        const marc = Marc.parse(recBinary, 'Iso2709');
+        rec = "<table class='marc'><tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
+        marc.fields.forEach(f => {
+          var tag = f[0]
+          rec += "<tr><td>" + tag + "</td><td>" 
+          var ind1 = ""
+          var ind2 = ""
+          var startIndex = 1
+          if(!tag.match(/^00/)) {
+            ind1 = f[1][0]
+            ind2 = f[1][1]
+            startIndex = 2
+          }
+          rec += ind1 + "</td><td>" + ind2 + "</td><td>"
+          for(var i = startIndex; i < f.length; i++) { 
+            var sf = f[i]
+            if(sf.length == 1) {
+              rec += "$" 
+            }   
+            rec += sf + " "
+          }
+          rec += "</td></tr>"
+        })           
+        rec += "</table>"         
+      }        
+      results.next(rec)   
+      break;
+  }
+}
+
 function z3950Connect(catalog) {
   var i = 1
   var host = catalogs[catalog].host
@@ -151,59 +204,7 @@ function z3950Connect(catalog) {
     z3950client.disconnect()
   }
   z3950client = new Z3950Client(port, host, database, username, password)
-  z3950client.connect((respType, respBody) => {
-    //console.log(respType)
-    switch(respType) {
-      case 'initResponse':
-        if(!win) {
-          createWindow()
-        }        
-        break;
-      case 'error':
-        console.log(respBody)
-        if(respBody == 'timeout') {
-          z3950client.reconnect()
-        }
-        break;
-      case 'searchResponse':
-        console.log(`${respBody} results found`)
-        z3950client.getRecord(resultSetID, 1)
-        break;
-      case 'presentResponse':
-        var rec = ""
-        if(respBody == "") {
-          rec = "No record found."
-        } else {
-          const recBinary = Buffer.from(respBody,'binary')
-          const marc = Marc.parse(recBinary, 'Iso2709');
-          rec = "<table class='marc'><tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
-          marc.fields.forEach(f => {
-            var tag = f[0]
-            rec += "<tr><td>" + tag + "</td><td>" 
-            var ind1 = ""
-            var ind2 = ""
-            var startIndex = 1
-            if(!tag.match(/^00/)) {
-              ind1 = f[1][0]
-              ind2 = f[1][1]
-              startIndex = 2
-            }
-            rec += ind1 + "</td><td>" + ind2 + "</td><td>"
-            for(var i = startIndex; i < f.length; i++) { 
-              var sf = f[i]
-              if(sf.length == 1) {
-                rec += "$" 
-              }   
-              rec += sf + " "
-            }
-            rec += "</td></tr>"
-          })           
-          rec += "</table>"         
-        }        
-        results.next(rec)   
-        break;
-      }
-  })
+  z3950client.connect(z3950callback)
 }
 
 function z3950search(resultSetID, query) {

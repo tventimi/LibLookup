@@ -108,9 +108,9 @@ export class Z3950Client {
         });
     }
 
-    reconnect() {
+    reconnect(callback) {
         console.log('Reconnecting...')
-        this.client.connect()
+        this.connect(callback)
     }
 
     disconnect() {
