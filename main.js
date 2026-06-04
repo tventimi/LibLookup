@@ -4,7 +4,7 @@ import { Marc } from 'marcjs'
 import * as readline from 'node:readline';
 import * as fs from 'node:fs';
 import * as path from 'path';
-import * as https from 'https'
+import * as http from 'http'
 import { fileURLToPath } from 'node:url';
 import { shell } from 'electron'
 import { Subject }  from 'rxjs'
@@ -82,18 +82,20 @@ const createWindow = () => {
     }; 
     
     const serverOptions = {
-      key: fs.readFileSync('./webserver/server.key'),
-      cert: fs.readFileSync('./webserver/server.crt')
+      //key: fs.readFileSync('./webserver/server.key'),
+      //cert: fs.readFileSync('./webserver/server.crt')
     };
     
-    const server = https.createServer(serverOptions, (req, res) => {    
+    const server = http.createServer(serverOptions, (req, res) => {    
       if (req.method === 'OPTIONS') {
         res.writeHead(204, headers);
         res.end();
         return;
       } else {
-        var url = new URL(req.url, `https://${req.headers.host}`)
+        var url = new URL(req.url, `http://${req.headers.host}`)
         var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
+        filename = (app.isPackaged ? app.getAppPath() + '/' : "") + filename
+        console.log(`Received request for ${filename}`) 
         fs.readFile(filename, (err, data) => {  
           if (err) {
             res.writeHead(404);
@@ -125,7 +127,7 @@ const createWindow = () => {
       }             
     })
     server.listen(3950, 'localhost', () => {
-      console.log('Electron app listening for HTTPS calls on https://localhost:3950');
+      console.log('Electron app listening for HTTPS calls on http://localhost:3950');
     });
   })  
 }
