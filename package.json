@@ -9,15 +9,6 @@
     "package": "electron-forge package",
     "make": "electron-forge make"
   },
-  "config": {
-    "forge": {
-      "packagerConfig": { 
-        "extraResource": [
-          "./index.html"
-        ]
-      }
-    }
-  },
   "author": "Thomas Ventimiglia",
   "license": "Apache-2.0",
   "devDependencies": {
