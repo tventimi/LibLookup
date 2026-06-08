@@ -6,8 +6,9 @@ import * as fs from 'node:fs';
 import * as path from 'path';
 import * as http from 'http'
 import { fileURLToPath } from 'node:url';
+import { Readable } from 'node:stream'
 import { shell } from 'electron'
-import { Subject }  from 'rxjs'
+import { Subject, finalize }  from 'rxjs'
 import started from 'electron-squirrel-startup';
 
 if (started) app.quit();
@@ -61,11 +62,10 @@ const catalogs = {
   }
 }
 
-const inputFile = 'input/testdata.txt'
-const outputFile = 'output/output.mrc'
-
 var queries = []
-var results = new Subject()
+var resultsDisplay = new Subject()
+var latestResults = []
+var displayResults = []
 var resultSetID = ""
 var catalogID = "WorldCat"
 var win
@@ -118,21 +118,32 @@ const createWindow = () => {
             }
             var catalog = url.searchParams.get('catalog')
             var query = url.searchParams.get('q')
+            var singleRecord = url.searchParams.get('singleRecord')
+            res.write(output)
             if(catalog && query) {
               resultSetID = "WEB1"
-              results.subscribe(rec => {
-                output += rec
-                res.end(output)
-              })
-              if(catalog != catalogID) {
-                catalogID = catalog
-                z3950Connect(catalogID)
+              resultsDisplay.subscribe(
+                rec => {
+                  res.end(rec)
+                },                
+              )
+              if(singleRecord == "true" && displayResults.length > 0) {
+                displayResults = latestResults.filter((rec) => {
+                  return rec.get('001')[0].value.includes(query.replace("@attr 1=12 ",""))
+                })
+                resultsDisplay.next("<table class='marc'>" + 
+                  renderMARC(displayResults[0]) + "</table>")
+              } else {
+                if(catalog != catalogID) {
+                  catalogID = catalog
+                  z3950Connect(catalogID)
+                }
+                z3950search(resultSetID, query)
               }
-              z3950search(resultSetID, query)
             } else {
-              res.end(output)
-            }
-          }          
+              res.end()
+            } 
+          }        
         })   
       }             
     })
@@ -143,7 +154,7 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
-  results.subscribe(rec => {
+  resultsDisplay.subscribe(rec => {
     if(resultSetID.startsWith("APP")) {
       win.webContents.send('set-results',rec)
     }
@@ -166,34 +177,55 @@ function z3950callback(respType, respBody) {
       break;
     case 'searchResponse':
       console.log(`${respBody} results found`)
-      z3950client.getRecord(resultSetID, 1)
+      latestResults = []
+      displayResults = []
+      z3950client.getRecord(resultSetID, 1, 50)
       break;
     case 'presentResponse':
-      var rec = ""
       if(respBody == "") {
-        rec = "No record found."
+        resultsDisplay.next("No record found.")
       } else {
-        rec = renderMARC(respBody,['001','245'])         
+        const recStream = Readable.from(Buffer.from(respBody,'binary'))
+        const iso2709Parser = Marc.createStream('Iso2709', 'Parser')
+        iso2709Parser.on('end', () => {
+          var records = "<table class='marc'>"
+          if(iso2709Parser.count == 1) {
+            records += renderMARC(displayResults[0])
+          } else {
+            records += displayResults.map(rec => renderMARC(rec,['001','245'])).join('')
+          }
+          records += "</table>"
+          resultsDisplay.next(records)
+        })
+        recStream.pipe(iso2709Parser).pipe(
+          Marc.transform((marc) => {
+           latestResults.push(marc)
+           displayResults.push(marc)
+          })
+        )          
       }        
-      results.next(rec)   
       break;
   }
 }
 
-function renderMARC(record, fields = []) {
-  const recBinary = Buffer.from(record,'binary')
-  const marc = Marc.parse(recBinary, 'Iso2709');
-  var rec = "<table class='marc'>"
+function renderMARC(marc, fields = []) {
+  var rec = ""
   if(fields.length > 0) {
     rec += "<tr>"
     for(var i = 0; i < fields.length; i++) {
       rec += "<td>" 
       var fi = marc.get(fields[i])[0]
+      var val = ""
       if(fi.tag.startsWith("00")) {      
-        rec += fi.value
+        val = fi.value
       } else {
-        rec += fi.subf.map((sf) => sf[1]).join(' ')
+        val = fi.subf.map((sf) => sf[1]).join(' ')
       }
+      if(i == 0) {
+        val = val.replace(/^[a-z]*/,"")
+        val = `<a href='index.html?singleRecord=true&catalog=${catalogID}&q=%40attr+1%3D12+${val}'>${val}</a>`
+      }
+      rec += val
       rec += "</td>"
     }
     rec += "</tr>"
@@ -221,7 +253,6 @@ function renderMARC(record, fields = []) {
       rec += "</td></tr>"
     })           
   }
-  rec += "</table>"
   return rec
 }
 

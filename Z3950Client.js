@@ -82,9 +82,16 @@ export class Z3950Client {
                         respType = "presentResponse"
                         var respBody = response.result.valueBlock.value
                         for(var i = 0; i < respBody.length; i++) {
-                            if(respBody[i].idBlock.tagNumber == 28) {
-                                var rec = respBody[i].valueBlock.value[0].valueBlock.value[1].valueBlock.value[0].valueBlock.value[0].valueBlock.value[1]
-                                respValue = String.fromCodePoint(...rec.valueBlock.valueHexView)
+                            if(respBody[i].idBlock.tagNumber == 24) {
+                                console.log(JSON.stringify(respBody[i].valueBlock.valueHexView[0]) + " record(s) returned")
+                            }
+                            else if(respBody[i].idBlock.tagNumber == 28) {
+                                respValue = ""
+                                var allRecords = respBody[i].valueBlock.value
+                                for(var j = 0; j < allRecords.length; j++) {
+                                    var rec = allRecords[j].valueBlock.value[1].valueBlock.value[0].valueBlock.value[0].valueBlock.value[1]
+                                    respValue += String.fromCodePoint(...rec.valueBlock.valueHexView)
+                                }
                             }
                         }
                         break;
@@ -126,9 +133,9 @@ export class Z3950Client {
         this.client.write(new Uint8Array(searchRequest.toBER()))
     }
 
-    getRecord(resultsetid, recno) {
-        console.log(`Retreiving record ${recno}`)
-        var presentRequest = createPresentRequest(resultsetid, recno)
+    getRecord(resultsetid, recno = 1, count = 1) {
+        console.log(`Retreiving ${count} record(s) starting from ${recno}`)
+        var presentRequest = createPresentRequest(resultsetid, recno, count)
         this.client.write(new Uint8Array(presentRequest.toBER()))
     }
 }
@@ -216,13 +223,13 @@ function createSearchRequest(database, rsid, queryString) {
     return req
 }
 
-function createPresentRequest(rsid, recno) {
+function createPresentRequest(rsid, recno = 1, count = 1) {
     var encoder = new TextEncoder()
     var marcObj = new asn1js.ObjectIdentifier({value: USMARC_OBJID})
     var req = createASN1object({id: 24, value: [
         {id: 31, value: encoder.encode(rsid)}, //result set ID
         {id: 30, value: recno}, //starting record number
-        {id: 29, value: 1},  //number of records to return
+        {id: 29, value: count},  //number of records to return
         {id: 104, value: marcObj.valueBlock.toBER()} //USMARC format
     ]})
     return req
