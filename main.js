@@ -8,6 +8,9 @@ import * as http from 'http'
 import { fileURLToPath } from 'node:url';
 import { shell } from 'electron'
 import { Subject }  from 'rxjs'
+import started from 'electron-squirrel-startup';
+
+if (started) app.quit();
 
 const catalogs = {
   "WorldCat": {
