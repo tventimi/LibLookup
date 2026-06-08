@@ -173,35 +173,56 @@ function z3950callback(respType, respBody) {
       if(respBody == "") {
         rec = "No record found."
       } else {
-        const recBinary = Buffer.from(respBody,'binary')
-        const marc = Marc.parse(recBinary, 'Iso2709');
-        rec = "<table class='marc'><tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
-        marc.fields.forEach(f => {
-          var tag = f[0]
-          rec += "<tr><td>" + tag + "</td><td>" 
-          var ind1 = ""
-          var ind2 = ""
-          var startIndex = 1
-          if(!tag.match(/^00/)) {
-            ind1 = f[1][0]
-            ind2 = f[1][1]
-            startIndex = 2
-          }
-          rec += ind1 + "</td><td>" + ind2 + "</td><td>"
-          for(var i = startIndex; i < f.length; i++) { 
-            var sf = f[i]
-            if(sf.length == 1) {
-              rec += "$" 
-            }   
-            rec += sf + " "
-          }
-          rec += "</td></tr>"
-        })           
-        rec += "</table>"         
+        rec = renderMARC(respBody,['001','245'])         
       }        
       results.next(rec)   
       break;
   }
+}
+
+function renderMARC(record, fields = []) {
+  const recBinary = Buffer.from(record,'binary')
+  const marc = Marc.parse(recBinary, 'Iso2709');
+  var rec = "<table class='marc'>"
+  if(fields.length > 0) {
+    rec += "<tr>"
+    for(var i = 0; i < fields.length; i++) {
+      rec += "<td>" 
+      var fi = marc.get(fields[i])[0]
+      if(fi.tag.startsWith("00")) {      
+        rec += fi.value
+      } else {
+        rec += fi.subf.map((sf) => sf[1]).join(' ')
+      }
+      rec += "</td>"
+    }
+    rec += "</tr>"
+  } else {
+    rec += "<tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
+    marc.fields.forEach(f => {
+      var tag = f[0]
+      rec += "<tr><td>" + tag + "</td><td>" 
+      var ind1 = ""
+      var ind2 = ""
+      var startIndex = 1
+      if(!tag.match(/^00/)) {
+        ind1 = f[1][0]
+        ind2 = f[1][1]
+        startIndex = 2
+      }
+      rec += ind1 + "</td><td>" + ind2 + "</td><td>"
+      for(var i = startIndex; i < f.length; i++) { 
+        var sf = f[i]
+        if(sf.length == 1) {
+          rec += "$" 
+        }   
+        rec += sf + " "
+      }
+      rec += "</td></tr>"
+    })           
+  }
+  rec += "</table>"
+  return rec
 }
 
 function z3950Connect(catalog) {
