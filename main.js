@@ -82,6 +82,20 @@ const createWindow = () => {
     }
   })
 
+  win.webContents.on('will-navigate', (event, url) => {
+    event.preventDefault()
+    var params = new URL(url).searchParams
+    if(params.has('catalog') && params.has('q')) {
+      displayResults = latestResults.filter((rec) => {
+        return rec.get('001')[0].value.includes(params.get('q').replace("@attr 1=12 ",""))
+      })
+      resultsDisplay.next("<table class='marc'>" + 
+        renderMARC(displayResults[0]) + "</table>")
+    } else {
+      z3950search(resultSetID, params.get('q'))
+    }
+  })
+
 
   win.loadFile('index.html').then(() => {
     const headers = {
@@ -308,8 +322,6 @@ ipcMain.on('connect-channel', (event, catalog) => {
 })
 
 ipcMain.on('form-submission-channel', (event, data) => {
-    var i = 1
-    queries = [data.queryString]
     resultSetID = "APP1"
     z3950search(resultSetID, data.queryString)
 });
