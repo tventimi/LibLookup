@@ -176,10 +176,11 @@ function z3950callback(respType, respBody) {
       }
       break;
     case 'searchResponse':
-      console.log(`${respBody} results found`)
+      var resultCount = respBody
+      console.log(`${resultCount} results found`)
       latestResults = []
       displayResults = []
-      z3950client.getRecord(resultSetID, 1, 50)
+      z3950client.getRecord(resultSetID, 1, Math.min(resultCount,50))
       break;
     case 'presentResponse':
       if(respBody == "") {
