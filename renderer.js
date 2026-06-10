@@ -1,6 +1,7 @@
 var resultsList = document.getElementById('results')
 const queryForm = document.getElementById('queryForm')
 const queryString = document.getElementById('queryString')
+const displayFields = document.getElementById('displayFields')
 const catalogSelect = document.querySelector('#catalog')
 
 window.electronApi.setResults((value) => {
@@ -11,6 +12,7 @@ queryForm.addEventListener('submit', (event) => {
     event.preventDefault();
     const formData = {
         queryString: queryString.value,
+        displayFields: displayFields.value
     };
     window.electronApi.submitForm(formData);  
 });

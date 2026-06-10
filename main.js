@@ -66,6 +66,7 @@ var queries = []
 var resultsDisplay = new Subject()
 var latestResults = []
 var displayResults = []
+var displayFields = []
 var resultSetID = ""
 var catalogID = "WorldCat"
 var win
@@ -133,6 +134,10 @@ const createWindow = () => {
             var catalog = url.searchParams.get('catalog')
             var query = url.searchParams.get('q')
             var singleRecord = url.searchParams.get('singleRecord')
+            var submittedDisplayFields = url.searchParams.get('displayFields')
+            if(submittedDisplayFields) {
+              displayFields = submittedDisplayFields.split(',').map(f => f.trim())
+            }
             res.write(output)
             if(catalog && query) {
               resultSetID = "WEB1"
@@ -202,13 +207,16 @@ function z3950callback(respType, respBody) {
       } else {
         var records = "<table class='marc'>"
         var marcRecords = respBody.split("\x1D")
+        if(marcRecords.length > 1) {
+          records += "<tr><th>" + ['001',...displayFields].join("</th><th>") + "</tr>"
+        }
         marcRecords.pop()
         for(var i = 0; i < marcRecords.length; i++) {
           var rec = Marc.parse(Buffer.from(marcRecords[i],'binary'),'iso2709')          
           if(marcRecords.length == 1) {
             records += renderMARC(rec)
           } else {
-            records += renderMARC(rec,['001','245'])
+            records += renderMARC(rec,['001',...displayFields])
           }
           latestResults.push(rec)
           displayResults.push(rec)          
@@ -228,14 +236,17 @@ function renderMARC(marc, fields = []) {
       rec += "<td>" 
       var fi = marc.get(fields[i])[0]
       var val = ""
-      if(fi.tag.startsWith("00")) {      
-        val = fi.value
-      } else {
-        val = fi.subf.map((sf) => sf[1]).join(' ')
-      }
-      if(i == 0) {
-        val = val.replace(/^[a-z]*/,"")
-        val = `<a href='index.html?singleRecord=true&catalog=${catalogID}&q=%40attr+1%3D12+${val}'>${val}</a>`
+      if(fi) {
+        if(fi.tag.startsWith("00")) {      
+          val = fi.value
+        } else {
+          val = fi.subf.map((sf) => sf[1]).join(' ')
+        }
+        if(i == 0) {
+          val = val.replace(/^[a-z]*/,"")
+          val = `<a href='index.html?singleRecord=true&catalog=${catalogID}` + 
+            `&q=%40attr+1%3D12+${val}&displayFields=${displayFields}'>${val}</a>`
+        }
       }
       rec += val
       rec += "</td>"
@@ -320,5 +331,7 @@ ipcMain.on('connect-channel', (event, catalog) => {
 
 ipcMain.on('form-submission-channel', (event, data) => {
     resultSetID = "APP1"
+    displayFields = data.displayFields.split(",").map(f => f.trim())
+    console.log(displayFields)
     z3950search(resultSetID, data.queryString)
 });
