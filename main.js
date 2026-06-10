@@ -200,24 +200,21 @@ function z3950callback(respType, respBody) {
       if(respBody == "") {
         resultsDisplay.next("No record found.")
       } else {
-        const recStream = Readable.from(Buffer.from(respBody,'binary'))
-        const iso2709Parser = Marc.createStream('Iso2709', 'Parser')
-        iso2709Parser.on('end', () => {
-          var records = "<table class='marc'>"
-          if(iso2709Parser.count == 1) {
-            records += renderMARC(displayResults[0])
+        var records = "<table class='marc'>"
+        var marcRecords = respBody.split("\x1D")
+        marcRecords.pop()
+        for(var i = 0; i < marcRecords.length; i++) {
+          var rec = Marc.parse(Buffer.from(marcRecords[i],'binary'),'iso2709')          
+          if(marcRecords.length == 1) {
+            records += renderMARC(rec)
           } else {
-            records += displayResults.map(rec => renderMARC(rec,['001','245'])).join('')
+            records += renderMARC(rec,['001','245'])
           }
-          records += "</table>"
-          resultsDisplay.next(records)
-        })
-        recStream.pipe(iso2709Parser).pipe(
-          Marc.transform((marc) => {
-           latestResults.push(marc)
-           displayResults.push(marc)
-          })
-        )          
+          latestResults.push(rec)
+          displayResults.push(rec)          
+        } 
+        records += "</table>"
+        resultsDisplay.next(records)        
       }        
       break;
   }

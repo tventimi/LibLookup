@@ -97,7 +97,7 @@ export class Z3950Client {
                         break;
                     default:
                         break;
-                }             
+                }     
                 callback(respType,respValue)   
             }                 
         });
@@ -211,8 +211,8 @@ function createSearchRequest(database, rsid, queryString) {
                 {id: 0, value: [ //operand
                     {id: 102, value: [ //attributes plus term
                         {id: 44, value: [ {value: [ // attribute sequence
-                            {id: 120, value: attrType}, //attribute type (1 = use)
-                            {id: 121, value: attrValue} //attribute value (12 = record ID)
+                            {id: 120, value: attrType}, //attribute type 
+                            {id: 121, value: attrValue} //attribute value 
                         ]} ]},
                         {id: 45, value: encoder.encode(queryString)} // search term
                     ]}
