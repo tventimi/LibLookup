@@ -69,6 +69,7 @@ var displayResults = []
 var displayFields = []
 var resultSetID = ""
 var catalogID = "WorldCat"
+var expectedResultCount = 50
 var win
 var z3950client
 
@@ -197,30 +198,35 @@ function z3950callback(respType, respBody) {
       console.log(`${resultCount} results found`)
       latestResults = []
       displayResults = []
-      z3950client.getRecord(resultSetID, 1, Math.min(resultCount,50))
+      expectedResultCount = Math.min(resultCount,50)
+      z3950client.getRecord(resultSetID, 1, expectedResultCount)
       break;
     case 'presentResponse':
       if(respBody == "") {
         resultsDisplay.next("No record found.")
       } else {
-        var records = "<table class='marc'>"
         var marcRecords = respBody.split("\x1D")
-        if(marcRecords.length > 1) {
-          records += "<tr><th>" + ['001',...displayFields].join("</th><th>") + "</tr>"
-        }
-        marcRecords.pop()
+        marcRecords.pop()        
         for(var i = 0; i < marcRecords.length; i++) {
-          var rec = Marc.parse(Buffer.from(marcRecords[i],'binary'),'iso2709')          
-          if(marcRecords.length == 1) {
-            records += renderMARC(rec)
-          } else {
-            records += renderMARC(rec,['001',...displayFields])
-          }
+          var rec = Marc.parse(Buffer.from(marcRecords[i],'binary'),'iso2709')                    
           latestResults.push(rec)
           displayResults.push(rec)          
-        } 
-        records += "</table>"
-        resultsDisplay.next(records)        
+        }         
+        if(latestResults.length == expectedResultCount) {
+          var records = "<table class='marc'>"
+          if(displayResults.length == 1) {
+            records += renderMARC(displayResults[0])
+          } else {
+            records += "<tr><th>" + ['001',...displayFields].join("</th><th>") + "</tr>"
+            records += displayResults.map((rec) => {
+              return renderMARC(rec,['001',...displayFields])
+            }).join("")
+          }
+          records += "</table>"
+          resultsDisplay.next(records)        
+        } else {
+          z3950client.getRecord(resultSetID,latestResults.length+1,expectedResultCount-latestResults.length)
+        }
       }        
       break;
   }

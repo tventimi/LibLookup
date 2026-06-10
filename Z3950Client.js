@@ -83,7 +83,7 @@ export class Z3950Client {
                         var respBody = response.result.valueBlock.value
                         for(var i = 0; i < respBody.length; i++) {
                             if(respBody[i].idBlock.tagNumber == 24) {
-                                console.log(JSON.stringify(respBody[i].valueBlock.valueHexView[0]) + " record(s) returned")
+                                console.log(respBody[i].valueBlock.valueHexView[0] + " record(s) returned")
                             }
                             else if(respBody[i].idBlock.tagNumber == 28) {
                                 respValue = ""
