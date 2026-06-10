@@ -128,9 +128,7 @@ const createWindow = () => {
           } else {  
             res.writeHead(200, headers);
             var output = data.toString()
-            if(filename === 'index.html') {
-                output = output.replace('renderer.js', 'webrenderer.js')
-            }
+            output = output.replace('renderer.js', 'webrenderer.js')
             var catalog = url.searchParams.get('catalog')
             var query = url.searchParams.get('q')
             var singleRecord = url.searchParams.get('singleRecord')
