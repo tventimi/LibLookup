@@ -10,57 +10,9 @@ import { Readable } from 'node:stream'
 import { shell } from 'electron'
 import { Subject, finalize }  from 'rxjs'
 import started from 'electron-squirrel-startup';
+import catalogs from './config/catalogs.json' with {"type": "json"}
 
 if (started) app.quit();
-
-const catalogs = {
-  "WorldCat": {
-    type: 'z3950',
-    host: 'zcat.oclc.org',
-    database: 'OLUCWorldCat',
-    username: '100062493',
-    password: 'catalog',
-    port: 210
-  },
-  "OCLCAuthorities": {
-    type: 'z3950',
-    host: 'zcat.oclc.org',
-    database: 'OCLCAuthoritiesLC',
-    username: '100062493',
-    password: 'catalog',
-    port: 210
-  },
-  "AlmaProd": {
-    type: 'z3950',
-    host: 'princeton.alma.exlibrisgroup.com',
-    database: '01PRI_INST',
-    port: 1921
-  },
-  "AlmaSand": {
-    type: 'z3950',
-    host: 'princeton-psb.alma.exlibrisgroup.com',
-    database: '01PRI_INST',
-    port: 1921
-  },
-  "LCCAT": {
-    type: 'z3950',
-    host: 'lx2.loc.gov',
-    database: 'LCDB',
-    port: 210 
-  },
-  "LCNAF": {
-    type: 'z3950',
-    host: 'lx2.loc.gov',
-    database: 'NAF',
-    port: 210 
-  },
-  "LCSAF": {
-    type: 'z3950',
-    host: 'lx2.loc.gov',
-    database: 'SAF',
-    port: 210 
-  }
-}
 
 var queries = []
 var resultsDisplay = new Subject()
@@ -314,8 +266,7 @@ function z3950search(resultSetID, query) {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-    
+    createWindow()    
   }
 })
   
