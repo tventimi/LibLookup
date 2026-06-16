@@ -27,8 +27,8 @@ var z3950client
 
 const createWindow = () => {  
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 300,
+    height: 400,
     webPreferences: {
       preload: path.join(path.dirname(fileURLToPath(import.meta.url)), 'preload.js'),
       contextIsolation: true,
@@ -36,22 +36,7 @@ const createWindow = () => {
     }
   })
 
-  win.webContents.on('will-navigate', (event, url) => {
-    event.preventDefault()
-    var params = new URL(url).searchParams
-    if(params.has('catalog') && params.has('q')) {
-      displayResults = latestResults.filter((rec) => {
-        return rec.get('001')[0].value.includes(params.get('q').replace("@attr 1=12 ",""))
-      })
-      resultsDisplay.next("<table class='marc'>" + 
-        renderMARC(displayResults[0]) + "</table>")
-    } else {
-      z3950search(resultSetID, params.get('q'))
-    }
-  })
-
-
-  win.loadFile('index.html').then(() => {
+  win.loadFile('config.html').then(() => {
     const headers = {
       'Access-Control-Allow-Origin': '*', 
       'Access-Control-Allow-Headers': '*',
@@ -91,7 +76,7 @@ const createWindow = () => {
             }
             res.write(output)
             if(catalog && query) {
-              resultSetID = "WEB1"
+              resultSetID = "1"
               resultsDisplay.subscribe(
                 rec => {
                   res.end(rec)
@@ -124,26 +109,15 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
-  resultsDisplay.subscribe(rec => {
-    if(resultSetID.startsWith("APP")) {
-      win.webContents.send('set-results',rec)
-    }
-  })
-  z3950Connect(catalogID)
+  if(!win) {
+    createWindow()
+  } 
 })
 
 function z3950callback(respType, respBody) {
   switch(respType) {
-    case 'initResponse':
-      if(!win) {
-        createWindow()
-      }        
-      break;
     case 'error':
       console.log(respBody)
-      if(respBody == 'timeout') {
-        //z3950client.reconnect(z3950callback)
-      }
       break;
     case 'searchResponse':
       var resultCount = respBody
@@ -251,7 +225,7 @@ function z3950Connect(catalog) {
 }
 
 function z3950search(resultSetID, query) {
-  if(!z3950client.isConnected()) {
+  if(!z3950client?.isConnected()) {
     z3950Connect(catalogID)
     var interval = setInterval(() => {
       if(z3950client.isConnected()) {
@@ -277,16 +251,6 @@ app.on('window-all-closed', () => {
   }
 })
 
-ipcMain.on('connect-channel', (event, catalog) => {
-  console.log('Received catalog from renderer:', catalog);
-  win.webContents.send('set-results',"")
-  catalogID = catalog
-  z3950Connect(catalogID)
-})
-
-ipcMain.on('form-submission-channel', (event, data) => {
-    resultSetID = "APP1"
-    displayFields = data.displayFields.split(",").map(f => f.trim())
-    console.log(displayFields)
-    z3950search(resultSetID, data.queryString)
+ipcMain.on('button-clicked', (event) => {
+    shell.openExternal('http://localhost:3950/')
 });

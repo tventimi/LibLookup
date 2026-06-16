@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <meta
+      http-equiv="X-Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'"
+    />
+    <link rel="stylesheet" href="./style.css" type="text/css"/>
+    <title>LibLookup</title>
+  </head>
+  <body>
+    <h2>LibLookup</h2>
+    <button id="browserButton">Open in browser</button>
+    <p><img title='LibLookup' src='images/LL-icon256.png' width="200"/></p>
+    <script src="renderer.js" type="application/javascript"></script>
+  </body>
+</html>
