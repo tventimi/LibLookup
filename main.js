@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron/main'
+import { app, BrowserWindow, ipcMain, Menu } from 'electron/main'
 import { Z3950Client } from './Z3950Client.js';
 import { Marc } from 'marcjs'
 import * as readline from 'node:readline';
@@ -13,6 +13,8 @@ import started from 'electron-squirrel-startup';
 import catalogs from './config/catalogs.json' with {"type": "json"}
 
 if (started) app.quit();
+
+Menu.setApplicationMenu(null);
 
 var queries = []
 var resultsDisplay = new Subject()
