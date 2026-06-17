@@ -22,14 +22,14 @@ var latestResults = []
 var displayResults = []
 var displayFields = []
 var resultSetID = ""
-var catalogID = "WorldCat"
+var catalogID = ""
 var expectedResultCount = 50
 var win
 var z3950client
 
 const createWindow = () => {  
   win = new BrowserWindow({
-    width: 300,
+    width: 250,
     height: 400,
     webPreferences: {
       preload: path.join(path.dirname(fileURLToPath(import.meta.url)), 'preload.js'),
@@ -68,7 +68,6 @@ const createWindow = () => {
           } else {  
             res.writeHead(200, headers);
             var output = data.toString()
-            output = output.replace('renderer.js', 'webrenderer.js')
             var catalog = url.searchParams.get('catalog')
             var query = url.searchParams.get('q')
             var singleRecord = url.searchParams.get('singleRecord')
