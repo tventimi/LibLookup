@@ -10,14 +10,18 @@ import { Readable } from 'node:stream'
 import { shell } from 'electron'
 import { Subject, finalize }  from 'rxjs'
 import started from 'electron-squirrel-startup';
+import * as csv from 'csv/sync'
+import { stringify } from 'csv/sync'
 import catalogs from './config/catalogs.json' with {"type": "json"}
 
 if (started) app.quit();
 
 Menu.setApplicationMenu(null);
 
+const indexURL = 'http://localhost:3950/'
+
 var queries = []
-var resultsDisplay = new Subject()
+var resultsStream = new Subject()
 var latestResults = []
 var displayResults = []
 var displayFields = []
@@ -51,57 +55,75 @@ const createWindow = () => {
       //cert: fs.readFileSync('./webserver/server.crt')
     };
     
-    const server = http.createServer(serverOptions, (req, res) => {    
-      if (req.method === 'OPTIONS') {
-        res.writeHead(204, headers);
-        res.end();
+    const server = http.createServer(serverOptions, (request, response) => {    
+      if (request.method === 'OPTIONS') {
+        response.writeHead(204, headers);
+        response.end();
         return;
-      } else {
-        var url = new URL(req.url, `http://${req.headers.host}`)
-        var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
-        filename = (app.isPackaged ? app.getAppPath() + '/' : "") + filename
-        console.log(`Received request for ${filename}`) 
-        fs.readFile(filename, (err, data) => {  
-          if (err) {
-            res.writeHead(404);
-            res.end('404 Not Found');
-          } else {  
-            res.writeHead(200, headers);
-            var output = data.toString()
-            var catalog = url.searchParams.get('catalog')
-            var query = url.searchParams.get('q')
-            var singleRecord = url.searchParams.get('singleRecord')
-            var submittedDisplayFields = url.searchParams.get('displayFields')
-            if(submittedDisplayFields) {
-              displayFields = submittedDisplayFields.split(',').map(f => f.trim())
-            }
-            res.write(output)
-            if(catalog && query) {
-              resultSetID = "1"
-              resultsDisplay.subscribe(
-                rec => {
-                  res.end(rec)
-                },                
-              )
-              if(singleRecord == "true" && displayResults.length > 0) {
-                displayResults = latestResults.filter((rec) => {
-                  return rec.get('001')[0].value.includes(query.replace("@attr 1=12 ",""))
-                })
-                resultsDisplay.next("<table class='marc'>" + 
-                  renderMARC(displayResults[0]) + "</table>")
+      } 
+
+      var url = new URL(request.url, `http://${request.headers.host}`)
+      var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
+      filename = (app.isPackaged ? app.getAppPath() + '/' : "") + filename
+      console.log(`Received request for ${filename}`) 
+      fs.readFile(filename, (err, data) => {  
+        if (err) {
+          response.writeHead(404);
+          response.end('404 Not Found');
+          return;
+        } 
+        response.writeHead(200, headers);
+        var fileContents = data.toString()
+        var catalog = url.searchParams.get('catalog')
+        var query = url.searchParams.get('q')
+        var singleRecord = (url.searchParams.get('singleRecord') == 'true')
+        var submittedDisplayFields = url.searchParams.get('displayFields')
+        var format = url.searchParams.get('format') || 'html'
+        if(submittedDisplayFields) {
+          displayFields = submittedDisplayFields.split(',').map(f => f.trim())
+        }
+        if(format == 'html') {
+          response.write(fileContents)
+        }
+        if(!(catalog && query)) { 
+          response.end() 
+          return
+        }
+        resultSetID = "1"
+        resultsStream.subscribe(
+          results => {
+            if(results == null) {
+              response.end()
+            } else if(results.count == 0) {
+              if(format == 'html') {
+                response.end("No results found")
               } else {
-                if(catalog != catalogID) {
-                  catalogID = catalog
-                  z3950Connect(catalogID)
-                }
-                z3950search(resultSetID, query)
+                response.end()
               }
-            } else {
-              res.end()
-            } 
-          }        
-        })   
-      }             
+            } else {              
+              if(!Array.isArray(results)) {
+                response.write(renderMARC(results))
+              } else {
+                var table = renderRecords([['001',...displayFields],...results],format)
+                response.write(table)
+              }
+            }
+          },                
+        )
+        if(singleRecord && displayResults.length > 0) {
+          displayResults = latestResults.filter((rec) => {
+            return rec.get('001')[0].value.includes(query.replace("@attr 1=12 ",""))
+          })
+          resultsStream.next(displayResults[0])
+          resultsStream.next(null)
+        } else {
+          if(catalog != catalogID) {
+            catalogID = catalog
+            z3950Connect(catalogID)
+          }
+          z3950search(resultSetID, query)
+        }      
+      })   
     })
     server.listen(3950, 'localhost', () => {
       console.log('Electron app listening for HTTPS calls on http://localhost:3950');
@@ -130,7 +152,8 @@ function z3950callback(respType, respBody) {
       break;
     case 'presentResponse':
       if(respBody == "") {
-        resultsDisplay.next("No record found.")
+        resultsStream.next([])
+        resultsStream.next(null)
       } else {
         var marcRecords = respBody.split("\x1D")
         marcRecords.pop()        
@@ -139,18 +162,11 @@ function z3950callback(respType, respBody) {
           latestResults.push(rec)
           displayResults.push(rec)          
         }         
-        if(latestResults.length == expectedResultCount) {
-          var records = "<table class='marc'>"
-          if(displayResults.length == 1) {
-            records += renderMARC(displayResults[0])
-          } else {
-            records += "<tr><th>" + ['001',...displayFields].join("</th><th>") + "</tr>"
-            records += displayResults.map((rec) => {
-              return renderMARC(rec,['001',...displayFields])
-            }).join("")
-          }
-          records += "</table>"
-          resultsDisplay.next(records)        
+        if(latestResults.length == expectedResultCount) {          
+          resultsStream.next(displayResults.map((rec) => {
+            return filterRecordFields(rec,['001',...displayFields])
+          })) 
+          resultsStream.next(null)       
         } else {
           z3950client.getRecord(resultSetID,latestResults.length+1,expectedResultCount-latestResults.length)
         }
@@ -159,12 +175,10 @@ function z3950callback(respType, respBody) {
   }
 }
 
-function renderMARC(marc, fields = []) {
-  var rec = ""
+function filterRecordFields(marc, fields = []) {
+  var filteredFields = []
   if(fields.length > 0) {
-    rec += "<tr>"
     for(var i = 0; i < fields.length; i++) {
-      rec += "<td>" 
       var fi = marc.get(fields[i])[0]
       var val = ""
       if(fi) {
@@ -175,38 +189,58 @@ function renderMARC(marc, fields = []) {
         }
         if(i == 0) {
           val = val.replace(/^[a-z]*/,"")
-          val = `<a href='index.html?singleRecord=true&catalog=${catalogID}` + 
-            `&q=%40attr+1%3D12+${val}&displayFields=${displayFields}'>${val}</a>`
         }
       }
-      rec += val
-      rec += "</td>"
+      filteredFields.push(val)
     }
-    rec += "</tr>"
-  } else {
-    rec += "<tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
-    marc.fields.forEach(f => {
-      var tag = f[0]
-      rec += "<tr><td>" + tag + "</td><td>" 
-      var ind1 = ""
-      var ind2 = ""
-      var startIndex = 1
-      if(!tag.match(/^00/)) {
-        ind1 = f[1][0]
-        ind2 = f[1][1]
-        startIndex = 2
-      }
-      rec += ind1 + "</td><td>" + ind2 + "</td><td>"
-      for(var i = startIndex; i < f.length; i++) { 
-        var sf = f[i]
-        if(sf.length == 1) {
-          rec += "$" 
-        }   
-        rec += sf + " "
-      }
-      rec += "</td></tr>"
-    })           
   }
+  return filteredFields
+}
+
+function renderRecords(records,format = 'html') {
+  var rendered = ""
+  if(format == 'csv') {
+    rendered += csv.stringify(records)
+  } else if (format == 'html') {
+    rendered += "<table class='marc'>"
+    rendered += "<th>" + records[0].join("</th><th>") + "</th>"
+    for(var i = 1; i < records.length; i++) {
+      rendered += "<tr>"
+      rendered += `<td><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
+            `&q=%40attr+1%3D12+${records[i][0]}&displayFields=${displayFields}'>${records[i][0]}</a></td>`
+      rendered += "<td>" + records[i].slice(1).join("</td><td>") + "</td>"
+      rendered += "</tr>"
+    }
+    rendered += "</table>"
+  }
+  return rendered
+}
+
+function renderMARC(marc) {
+  var rec = "<table class='marc'>"
+  rec += "<tr><td>LDR</td><td></td><td></td><td>" + marc.leader + "</td></tr>"
+  marc.fields.forEach(f => {
+    var tag = f[0]
+    rec += "<tr><td>" + tag + "</td><td>" 
+    var ind1 = ""
+    var ind2 = ""
+    var startIndex = 1
+    if(!tag.match(/^00/)) {
+      ind1 = f[1][0]
+      ind2 = f[1][1]
+      startIndex = 2
+    }
+    rec += ind1 + "</td><td>" + ind2 + "</td><td>"
+    for(var i = startIndex; i < f.length; i++) { 
+      var sf = f[i]
+      if(sf.length == 1) {
+        rec += "$" 
+      }   
+      rec += sf + " "
+    }
+    rec += "</td></tr>"
+  })          
+  rec += "</table>" 
   return rec
 }
 
@@ -253,5 +287,5 @@ app.on('window-all-closed', () => {
 })
 
 ipcMain.on('button-clicked', (event) => {
-    shell.openExternal('http://localhost:3950/')
+    shell.openExternal(indexURL)
 });
