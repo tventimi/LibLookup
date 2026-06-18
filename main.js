@@ -36,7 +36,7 @@ const createWindow = () => {
     width: 250,
     height: 400,
     webPreferences: {
-      preload: path.join(path.dirname(fileURLToPath(import.meta.url)), 'preload.js'),
+      preload: path.join(import.meta.dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -64,7 +64,7 @@ const createWindow = () => {
 
       var url = new URL(request.url, `http://${request.headers.host}`)
       var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
-      filename = (app.isPackaged ? app.getAppPath() + '/' : "") + filename
+      filename = app.isPackaged ? path.join(app.getAppPath(),filename) :  filename
       console.log(`Received request for ${filename}`) 
       fs.readFile(filename, (err, data) => {  
         if (err) {
@@ -84,12 +84,10 @@ const createWindow = () => {
           displayFields = submittedDisplayFields.split(',').map(f => f.trim())
         }
         if(format == 'html') { 
-          if(filename == 'index.html') {
-            data = fs.readFileSync('config/catalogs.json')  
-            var catalogList = JSON.parse(data.toString())
-            var catalogHTML = ""            
-            Object.keys(catalogList).forEach((cat) => {
-              catalogHTML += `<option value='${cat}'>${catalogList[cat].name}</option>`
+          if(filename.endsWith('index.html')) {      
+            var catalogHTML = ""     
+            Object.keys(catalogs).forEach((cat) => {
+              catalogHTML += `<option value='${cat}'>${catalogs[cat].name}</option>`
             })
             fileContents = fileContents.replace(/<select[^>]*id=.catalog.[^>]*>/,"$&" + catalogHTML)
             if(mode == 'plugin') {
@@ -294,7 +292,9 @@ app.on('activate', () => {
 })
   
 app.on('window-all-closed', () => {
-  z3950client.disconnect()
+  if(z3950client?.isConnected()) {
+    z3950client.disconnect()
+  }
   if (process.platform !== 'darwin') {
     app.quit()
   }
