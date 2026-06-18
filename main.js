@@ -79,16 +79,30 @@ const createWindow = () => {
         var singleRecord = (url.searchParams.get('singleRecord') == 'true')
         var submittedDisplayFields = url.searchParams.get('displayFields')
         var format = url.searchParams.get('format') || 'html'
+        var mode = url.searchParams.get('mode') || 'web' 
         if(submittedDisplayFields) {
           displayFields = submittedDisplayFields.split(',').map(f => f.trim())
         }
-        if(format == 'html') {
+        if(format == 'html') { 
+          if(filename == 'index.html') {
+            data = fs.readFileSync('config/catalogs.json')  
+            var catalogList = JSON.parse(data.toString())
+            var catalogHTML = ""            
+            Object.keys(catalogList).forEach((cat) => {
+              catalogHTML += `<option value='${cat}'>${catalogList[cat].name}</option>`
+            })
+            fileContents = fileContents.replace(/<select[^>]*id=.catalog.[^>]*>/,"$&" + catalogHTML)
+            if(mode == 'plugin') {
+              fileContents = fileContents.replace(/.*(<form id=\"queryForm\">.*<\/form>).*/s,"$1")
+            }
+          }
           response.write(fileContents)
         }
         if(!(catalog && query)) { 
           response.end() 
           return
         }
+
         resultSetID = "1"
         resultsStream.subscribe(
           results => {
