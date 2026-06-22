@@ -86,6 +86,7 @@ const createWindow = () => {
         var format = url.searchParams.get('format') || 'html'
         var mode = url.searchParams.get('mode') || 'web' 
         startAtRecord = +(url.searchParams.get('start') || 1)
+        console.log(query)
         if(submittedDisplayFields) {
           displayFields = submittedDisplayFields.split(',').map(f => f.trim())
         }
@@ -96,18 +97,19 @@ const createWindow = () => {
             Object.keys(catalogs).forEach((cat) => {
               const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
               catalogList.append(catOption)
-            })
-            if(mode == 'plugin') {
-              outputDoc = outputDoc('#queryForm')
-            } 
+            })             
           }
         }
         if(!filename.endsWith('.html')) {
-          response.end(outputDoc.text())
+          response.end(outputDoc('#results').text())
           return
         }
-        if(!(catalog && query)) { 
-          response.end(outputDoc.html()) 
+        if(!(catalog && query)) {   
+          if(mode == 'plugin') {      
+            response.end('<form id="queryForm">' + outputDoc('#queryForm').html() + '</form>') 
+          } else {
+            response.end(outputDoc.html())
+          }
           return
         }
 
@@ -141,7 +143,7 @@ const createWindow = () => {
                   nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
                   navbar.append(`<a href='${filename}${nextURL.search}'>Next ${resultsPerPage}</a>`)
                 }
-                outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + resultsPerPage - 1} of ${latestResultCount} results`)
+                outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
                 outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
               }
             }
@@ -156,9 +158,10 @@ const createWindow = () => {
         } else {
           if(catalog != catalogID) {
             catalogID = catalog
+            latestQuery = ""
             z3950Connect(catalogID)
-          }
-          z3950search(resultSetID, query)
+          } 
+          z3950search(resultSetID, query)         
         }      
       })   
     })
@@ -238,7 +241,8 @@ function filterRecordFields(marc, fields = []) {
 function renderRecords(records,format = 'html') {
   var rendered = ""
   if(format == 'json') {
-    rendered += JSON.stringify(records)
+    var recordsAndCount = {resultCount: latestResultCount, records: records}
+    rendered += JSON.stringify(recordsAndCount)
   } else if(format == 'csv') {
     rendered += csv.stringify(records)
   } else if (format == 'html') {
@@ -300,18 +304,24 @@ function z3950Connect(catalog) {
 }
 
 function z3950search(resultSetID, query) {
-  latestQuery = query
   if(!z3950client?.isConnected()) {
     z3950Connect(catalogID)
-    var interval = setInterval(() => {
-      if(z3950client.isConnected()) {
-          clearInterval(interval)
-          z3950client.query(resultSetID, query)
-      }
-    },1000)
-  } else {
-    z3950client.query(resultSetID, query)
   }
+  var interval = setInterval(() => {
+    if(z3950client.isConnected()) {
+      latestResults = []
+      displayResults = []
+      clearInterval(interval)
+        if(latestQuery == query) {
+          console.log('cache')
+          z3950client.getRecords(resultSetID,startAtRecord,Math.min(resultsPerPage,latestResultCount-startAtRecord))
+        } else {
+          console.log('search')
+          z3950client.query(resultSetID, query)
+        }
+        latestQuery = query
+    }
+  },1000)
 }
 
 app.on('activate', () => {

@@ -134,7 +134,7 @@ export class Z3950Client {
     }
 
     getRecords(resultsetid, recno = 1, count = 1) {
-        console.log(`Retreiving ${count} record(s) starting from ${recno}`)
+        console.log(`Retrieving ${count} record(s) starting from ${recno}`)
         var presentRequest = createPresentRequest(resultsetid, recno, count)
         this.client.write(new Uint8Array(presentRequest.toBER()))
     }
