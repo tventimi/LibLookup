@@ -14,13 +14,14 @@ import * as csv from 'csv/sync'
 import { stringify } from 'csv/sync'
 import catalogs from './config/catalogs.json' with {"type": "json"}
 import * as cheerio from 'cheerio'
+import { start } from 'node:repl';
 
 if (started) app.quit();
 
 Menu.setApplicationMenu(null);
 
 const indexURL = 'http://localhost:3950/'
-
+const resultsPerPage = 50
 
 var latestQuery = ""
 var resultsStream = new Subject()
@@ -30,6 +31,7 @@ var displayResults = []
 var displayFields = []
 var resultSetID = ""
 var catalogID = ""
+var startAtRecord = 1
 var expectedResultCount = 50
 var win
 var z3950client
@@ -83,6 +85,7 @@ const createWindow = () => {
         var submittedDisplayFields = url.searchParams.get('displayFields')
         var format = url.searchParams.get('format') || 'html'
         var mode = url.searchParams.get('mode') || 'web' 
+        startAtRecord = +(url.searchParams.get('start') || 1)
         if(submittedDisplayFields) {
           displayFields = submittedDisplayFields.split(',').map(f => f.trim())
         }
@@ -96,7 +99,7 @@ const createWindow = () => {
             })
             if(mode == 'plugin') {
               outputDoc = outputDoc('#queryForm')
-            }
+            } 
           }
         }
         if(!filename.endsWith('.html')) {
@@ -127,7 +130,18 @@ const createWindow = () => {
               if(!Array.isArray(results)) {
                 outputDoc('#results').append(renderMARC(results))
               } else {
-                outputDoc("#resultCount").append(`Found ${latestResultCount} results`)
+                var navbar = outputDoc("#navigation")
+                if(startAtRecord > 1) {
+                  var prevURL = new URL(url)
+                  prevURL.searchParams.set('start',Math.max(startAtRecord - resultsPerPage,1))
+                  navbar.append(`<a href='${filename}${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
+                }
+                if(startAtRecord + displayResults.length <= latestResultCount) {
+                  var nextURL = new URL(url)
+                  nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
+                  navbar.append(`<a href='${filename}${nextURL.search}'>Next ${resultsPerPage}</a>`)
+                }
+                outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + resultsPerPage - 1} of ${latestResultCount} results`)
                 outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
               }
             }
@@ -172,7 +186,7 @@ function z3950callback(respType, respBody) {
       latestResults = []
       displayResults = []
       expectedResultCount = Math.min(resultCount,50)
-      z3950client.getRecords(resultSetID, 1, expectedResultCount)
+      z3950client.getRecords(resultSetID, startAtRecord, expectedResultCount)
       break;
     case 'presentResponse':
       if(respBody == "") {
@@ -192,7 +206,7 @@ function z3950callback(respType, respBody) {
           })) 
           resultsStream.next(null)       
         } else {
-          z3950client.getRecords(resultSetID,latestResults.length+1,expectedResultCount-latestResults.length)
+          z3950client.getRecords(resultSetID,startAtRecord+latestResults.length,expectedResultCount-latestResults.length)
         }
       }        
       break;
