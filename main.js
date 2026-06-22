@@ -86,7 +86,6 @@ const createWindow = () => {
         var format = url.searchParams.get('format') || 'html'
         var mode = url.searchParams.get('mode') || 'web' 
         startAtRecord = +(url.searchParams.get('start') || 1)
-        console.log(query)
         if(submittedDisplayFields) {
           displayFields = submittedDisplayFields.split(',').map(f => f.trim())
         }
@@ -101,7 +100,7 @@ const createWindow = () => {
           }
         }
         if(!filename.endsWith('.html')) {
-          response.end(outputDoc('#results').text())
+          response.end(outputDoc.text())
           return
         }
         if(!(catalog && query)) {   
