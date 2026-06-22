@@ -313,7 +313,8 @@ function z3950search(resultSetID, query) {
       clearInterval(interval)
         if(latestQuery == query) {
           console.log('cache')
-          z3950client.getRecords(resultSetID,startAtRecord,Math.min(resultsPerPage,latestResultCount-startAtRecord))
+          expectedResultCount = Math.min(resultsPerPage,latestResultCount-startAtRecord+1)
+          z3950client.getRecords(resultSetID,startAtRecord,expectedResultCount)
         } else {
           console.log('search')
           z3950client.query(resultSetID, query)
