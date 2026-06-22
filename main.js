@@ -112,10 +112,10 @@ const createWindow = () => {
         resultsStream.subscribe(
           results => {
             if(results == null) {
-              if(format == 'csv') {
-                response.end(outputDoc('#results').text()) 
-              } else {
+              if(format == 'html') {
                 response.end(outputDoc.html())
+              } else {
+                response.end(outputDoc('#results').text())                 
               }
             } else if(results.count == 0) {
               if(format == 'html') {
@@ -127,6 +127,7 @@ const createWindow = () => {
               if(!Array.isArray(results)) {
                 outputDoc('#results').append(renderMARC(results))
               } else {
+                outputDoc("#resultCount").append(`Found ${latestResultCount} results`)
                 outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
               }
             }
@@ -171,7 +172,7 @@ function z3950callback(respType, respBody) {
       latestResults = []
       displayResults = []
       expectedResultCount = Math.min(resultCount,50)
-      z3950client.getRecord(resultSetID, 1, expectedResultCount)
+      z3950client.getRecords(resultSetID, 1, expectedResultCount)
       break;
     case 'presentResponse':
       if(respBody == "") {
@@ -191,7 +192,7 @@ function z3950callback(respType, respBody) {
           })) 
           resultsStream.next(null)       
         } else {
-          z3950client.getRecord(resultSetID,latestResults.length+1,expectedResultCount-latestResults.length)
+          z3950client.getRecords(resultSetID,latestResults.length+1,expectedResultCount-latestResults.length)
         }
       }        
       break;
@@ -222,7 +223,9 @@ function filterRecordFields(marc, fields = []) {
 
 function renderRecords(records,format = 'html') {
   var rendered = ""
-  if(format == 'csv') {
+  if(format == 'json') {
+    rendered += JSON.stringify(records)
+  } else if(format == 'csv') {
     rendered += csv.stringify(records)
   } else if (format == 'html') {
     rendered += "<table class='marc'>"
