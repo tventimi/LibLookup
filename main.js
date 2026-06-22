@@ -13,15 +13,18 @@ import started from 'electron-squirrel-startup';
 import * as csv from 'csv/sync'
 import { stringify } from 'csv/sync'
 import catalogs from './config/catalogs.json' with {"type": "json"}
+import * as cheerio from 'cheerio'
 
 if (started) app.quit();
 
 Menu.setApplicationMenu(null);
 
-const indexURL = 'http://localhost:3950/'
+const indexURL = 'http://127.0.0.1:3950/'
 
-var queries = []
+
+var latestQuery = ""
 var resultsStream = new Subject()
+var latestResultCount = 0
 var latestResults = []
 var displayResults = []
 var displayFields = []
@@ -73,7 +76,7 @@ const createWindow = () => {
           return;
         } 
         response.writeHead(200, headers);
-        var fileContents = data.toString()
+        var outputDoc = cheerio.load(data.toString())
         var catalog = url.searchParams.get('catalog')
         var query = url.searchParams.get('q')
         var singleRecord = (url.searchParams.get('singleRecord') == 'true')
@@ -85,19 +88,23 @@ const createWindow = () => {
         }
         if(format == 'html') { 
           if(filename.endsWith('index.html')) {      
-            var catalogHTML = ""     
+            var catalogHTML = "" 
+            var catalogList = outputDoc('#catalog')
             Object.keys(catalogs).forEach((cat) => {
-              catalogHTML += `<option value='${cat}'>${catalogs[cat].name}</option>`
+              const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
+              catalogList.append(catOption)
             })
-            fileContents = fileContents.replace(/<select[^>]*id=.catalog.[^>]*>/,"$&" + catalogHTML)
             if(mode == 'plugin') {
-              fileContents = fileContents.replace(/.*(<form id=\"queryForm\">.*<\/form>).*/s,"$1")
+              outputDoc = outputDoc('#queryForm')
             }
           }
-          response.write(fileContents)
+        }
+        if(!filename.endsWith('.html')) {
+          response.end(outputDoc.text())
+          return
         }
         if(!(catalog && query)) { 
-          response.end() 
+          response.end(outputDoc.html()) 
           return
         }
 
@@ -105,7 +112,11 @@ const createWindow = () => {
         resultsStream.subscribe(
           results => {
             if(results == null) {
-              response.end()
+              if(format == 'csv') {
+                response.end(outputDoc('#results').text()) 
+              } else {
+                response.end(outputDoc.html())
+              }
             } else if(results.count == 0) {
               if(format == 'html') {
                 response.end("No results found")
@@ -114,10 +125,9 @@ const createWindow = () => {
               }
             } else {              
               if(!Array.isArray(results)) {
-                response.write(renderMARC(results))
+                outputDoc('#results').append(renderMARC(results))
               } else {
-                var table = renderRecords([['001',...displayFields],...results],format)
-                response.write(table)
+                outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
               }
             }
           },                
@@ -137,8 +147,8 @@ const createWindow = () => {
         }      
       })   
     })
-    server.listen(3950, 'localhost', () => {
-      console.log('Electron app listening for HTTPS calls on http://localhost:3950');
+    server.listen(3950, '127.0.0.1', () => {
+      console.log('Electron app listening for HTTP calls on http://127.0.0.1:3950');
     });
   })  
 }
@@ -157,6 +167,7 @@ function z3950callback(respType, respBody) {
     case 'searchResponse':
       var resultCount = respBody
       console.log(`${resultCount} results found`)
+      latestResultCount = resultCount
       latestResults = []
       displayResults = []
       expectedResultCount = Math.min(resultCount,50)
@@ -272,6 +283,7 @@ function z3950Connect(catalog) {
 }
 
 function z3950search(resultSetID, query) {
+  latestQuery = query
   if(!z3950client?.isConnected()) {
     z3950Connect(catalogID)
     var interval = setInterval(() => {

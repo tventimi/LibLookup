@@ -24,9 +24,11 @@
   },
   "dependencies": {
     "asn1js": "^3.0.6",
+    "cheerio": "^1.2.0",
     "csv": "^6.6.0",
     "electron-squirrel-startup": "^1.0.1",
     "express": "^5.2.1",
+    "jsdom": "^29.1.1",
     "localtunnel": "^2.0.2",
     "marcjs": "^3.0.2",
     "marcrecord": "^1.4.0",
