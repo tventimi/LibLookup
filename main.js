@@ -19,7 +19,7 @@ if (started) app.quit();
 
 Menu.setApplicationMenu(null);
 
-const indexURL = 'http://127.0.0.1:3950/'
+const indexURL = 'http://localhost:3950/'
 
 
 var latestQuery = ""
@@ -147,8 +147,8 @@ const createWindow = () => {
         }      
       })   
     })
-    server.listen(3950, '127.0.0.1', () => {
-      console.log('Electron app listening for HTTP calls on http://127.0.0.1:3950');
+    server.listen(3950, 'localhost', () => {
+      console.log('Electron app listening for HTTP calls on http://localhost:3950');
     });
   })  
 }
