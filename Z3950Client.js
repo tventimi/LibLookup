@@ -258,7 +258,7 @@ function createASN1object(jsonOBJ) {
         }
 
         if(valueType == 'number') {          
-            var byteLength = Math.ceil(Math.log2(newValue + 1) / 8);
+            var byteLength = Math.ceil(Math.log2(newValue + 1) / 7);
             if(jsonOBJ.byteLength !== undefined) {
                 byteLength = jsonOBJ.byteLength
             }
