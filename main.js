@@ -139,12 +139,12 @@ const createWindow = () => {
                 if(startAtRecord > 1) {
                   var prevURL = new URL(url)
                   prevURL.searchParams.set('start',Math.max(startAtRecord - resultsPerPage,1))
-                  navbar.append(`<a href='${filename}${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
+                  navbar.append(`<a href='index.html${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
                 }
                 if(startAtRecord + displayResults.length <= latestResultCount) {
                   var nextURL = new URL(url)
                   nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
-                  navbar.append(`<a href='${filename}${nextURL.search}'>Next ${resultsPerPage}</a>`)
+                  navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
                 }
                 outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
                 outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
