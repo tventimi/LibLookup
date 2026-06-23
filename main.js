@@ -240,7 +240,10 @@ function filterRecordFields(marc, fields = []) {
 function renderRecords(records,format = 'html') {
   var rendered = ""
   if(format == 'json') {
-    var recordsAndCount = {resultCount: latestResultCount, records: records}
+    var recordsAndCount = {numberOfRecords: latestResultCount, records: records}
+    if(startAtRecord + resultsPerPage < latestResultCount) {
+      recordsAndCount.nextRecordPosition = startAtRecord + resultsPerPage
+    }    
     rendered += JSON.stringify(recordsAndCount)
   } else if(format == 'csv') {
     rendered += csv.stringify(records)
@@ -311,7 +314,7 @@ function z3950search(resultSetID, query) {
       latestResults = []
       displayResults = []
       clearInterval(interval)
-        if(latestQuery == query) {
+        if(latestQuery == query && z3950client.isConnected()) {
           console.log('cache')
           expectedResultCount = Math.min(resultsPerPage,latestResultCount-startAtRecord+1)
           z3950client.getRecords(resultSetID,startAtRecord,expectedResultCount)
