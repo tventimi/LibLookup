@@ -96,7 +96,10 @@ const createWindow = () => {
             Object.keys(catalogs).forEach((cat) => {
               const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
               catalogList.append(catOption)
-            })             
+            })
+            if(mode != "plugin") {
+              outputDoc('.plugin-only').remove()
+            }             
           }
         }
         if(!filename.endsWith('.html')) {
@@ -107,6 +110,7 @@ const createWindow = () => {
           if(mode == 'plugin') {      
             response.end('<form id="queryForm">' + outputDoc('#queryForm').html() + '</form>') 
           } else {
+            outputDoc('#maxRecs').remove()
             response.end(outputDoc.html())
           }
           return
