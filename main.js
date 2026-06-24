@@ -21,8 +21,9 @@ if (started) app.quit();
 Menu.setApplicationMenu(null);
 
 const indexURL = 'http://localhost:3950/'
-const resultsPerPage = 50
+const defaultPageSize = 50
 
+var resultsPerPage = defaultPageSize
 var latestQuery = ""
 var resultsStream = new Subject()
 var latestResultCount = 0
@@ -32,7 +33,7 @@ var displayFields = []
 var resultSetID = ""
 var catalogID = ""
 var startAtRecord = 1
-var expectedResultCount = 50
+var expectedResultCount = defaultPageSize
 var win
 var z3950client
 
@@ -86,6 +87,9 @@ const createWindow = () => {
         var format = url.searchParams.get('format') || 'html'
         var mode = url.searchParams.get('mode') || 'web' 
         startAtRecord = +(url.searchParams.get('start') || 1)
+        var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
+        resultsPerPage = Math.min(maxRecs,defaultPageSize)
+        
         if(submittedDisplayFields) {
           displayFields = submittedDisplayFields.split(',').map(f => f.trim())
         }
@@ -191,7 +195,7 @@ function z3950callback(respType, respBody) {
       latestResultCount = resultCount
       latestResults = []
       displayResults = []
-      expectedResultCount = Math.min(resultCount,50)
+      expectedResultCount = Math.min(resultCount,resultsPerPage)
       z3950client.getRecords(resultSetID, startAtRecord, expectedResultCount)
       break;
     case 'presentResponse':
@@ -252,12 +256,12 @@ function renderRecords(records,format = 'html') {
   } else if(format == 'csv') {
     rendered += csv.stringify(records)
   } else if (format == 'html') {
-    rendered += "<table class='marc'>"
-    rendered += "<th>" + records[0].join("</th><th>") + "</th>"
+    rendered += "<table class='marc'><th></th>"
+    rendered += "<th>" + records[0].slice(1).join("</th><th>") + "</th>"
     for(var i = 1; i < records.length; i++) {
       rendered += "<tr>"
       rendered += `<td><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
-            `&q=%40attr+1%3D12+${records[i][0]}&displayFields=${displayFields}'>${records[i][0]}</a></td>`
+            `&q=%40attr+1%3D12+${records[i][0]}&displayFields=${displayFields}'>View</a></td>`
       rendered += "<td>" + records[i].slice(1).join("</td><td>") + "</td>"
       rendered += "</tr>"
     }
