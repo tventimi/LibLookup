@@ -39,8 +39,8 @@ var z3950client
 
 const createWindow = () => {  
   win = new BrowserWindow({
-    width: 250,
-    height: 400,
+    width: 200,
+    height: 370,
     webPreferences: {
       preload: path.join(import.meta.dirname, 'preload.js'),
       contextIsolation: true,
@@ -89,7 +89,7 @@ const createWindow = () => {
         startAtRecord = +(url.searchParams.get('start') || 1)
         var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
         resultsPerPage = Math.min(maxRecs,defaultPageSize)
-        
+
         if(submittedDisplayFields) {
           displayFields = submittedDisplayFields.split(',').map(f => f.trim())
         }

@@ -1,5 +1,5 @@
 {
-  "name": "liblookup",
+  "name": "LibLookup",
   "version": "1.0.0",
   "description": "Connect to various library catalogs",
   "main": "main.js",
