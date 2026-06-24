@@ -17,41 +17,50 @@
   <body>
     <h3>LibLookup</h3>
     <form id="queryForm">
-      <p>Catalog:
+      <div>
+        <label for="catalog">Catalog:</label>
         <select title="Catalog" name="catalog" id="catalog"></select>
-      <br/>
-      Query:
-      <input 
-        title="Z39.50 query string" 
-        placeholder='Keyword or Z39.50 query string' 
-        type="text" 
-        id="queryString"
-        name="q"
-        size="30"
-      />
-      <br/>
-      Display fields:
-      <input 
-        title="Display fields" 
-        placeholder='e.g. 100,245' 
-        type="text" 
-        id="displayFields"
-        name="displayFields"
-        size="30"
-        value="100,245"
-      />
-      <br/>
-      <label class='plugin-only' for='maxRecs'>Maximum records:</label>
-      <input 
-        title="Maximum Records"
-        type="text"
-        id="maxRecs"
-        class='plugin-only'
-        name="maxRecs"
-        size="10"
-        value="100"
-      />
-      </p>
+      </div>
+      <div class='plugin-only'>
+        <input type="radio" id="queryMode" name="mode" value="queryMode" checked>
+        <label for="queryMode">Query Mode</label>
+        <input type="radio" id="batchMode" name="mode" value="batchMode">
+        <label for="batchMode">Batch Mode</label>
+      </div>
+      <div>
+        <label for="q">Query:</label>
+        <input 
+          title="Z39.50 query string" 
+          placeholder='Keyword or Z39.50 query string' 
+          type="text" 
+          id="queryString"
+          name="q"
+          size="30"
+        />
+      </div>
+      <div>
+        <label for="displayFields">Fields:</label>
+        <input 
+          title="Display fields" 
+          placeholder='e.g. 100,245' 
+          type="text" 
+          id="displayFields"
+          name="displayFields"
+          size="30"
+          value="100,245"
+        />
+      </div>
+      <div class='plugin-only'>
+        <label for='maxRecs'>Maximum records:</label>
+        <input 
+          title="Maximum Records"
+          type="text"
+          id="maxRecs"
+          name="maxRecs"
+          size="10"
+          value="50"
+        />
+      </div>
       <p><button id="submit" type="submit">Search</button></p>
     </form>
     <p id='resultCount'></p>

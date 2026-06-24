@@ -85,7 +85,7 @@ const createWindow = () => {
         var singleRecord = (url.searchParams.get('singleRecord') == 'true')
         var submittedDisplayFields = url.searchParams.get('displayFields')
         var format = url.searchParams.get('format') || 'html'
-        var mode = url.searchParams.get('mode') || 'web' 
+        var pageType = url.searchParams.get('pageType') || 'web' 
         startAtRecord = +(url.searchParams.get('start') || 1)
         var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
         resultsPerPage = Math.min(maxRecs,defaultPageSize)
@@ -101,7 +101,7 @@ const createWindow = () => {
               const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
               catalogList.append(catOption)
             })
-            if(mode != "plugin") {
+            if(pageType != "plugin") {
               outputDoc('.plugin-only').remove()
             }             
           }
@@ -111,10 +111,10 @@ const createWindow = () => {
           return
         }
         if(!(catalog && query)) {   
-          if(mode == 'plugin') {      
+          if(pageType == 'plugin') {      
             response.end('<form id="queryForm">' + outputDoc('#queryForm').html() + '</form>') 
           } else {
-            outputDoc('#maxRecs').remove()
+            outputDoc('.plugin-only').remove()
             response.end(outputDoc.html())
           }
           return
