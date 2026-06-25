@@ -21,12 +21,6 @@
         <label for="catalog">Catalog:</label>
         <select title="Catalog" name="catalog" id="catalog"></select>
       </div>
-      <div class='plugin-only'>
-        <input type="radio" id="queryMode" name="mode" value="queryMode" checked>
-        <label for="queryMode">Query Mode</label>
-        <input type="radio" id="batchMode" name="mode" value="batchMode">
-        <label for="batchMode">Batch Mode</label>
-      </div>
       <div>
         <label for="q">Query:</label>
         <input 
@@ -37,6 +31,9 @@
           name="q"
           size="30"
         />
+      </div>
+      <div class="plugin-only">
+        <button type="button" id="insertSelectionButton">Insert Selection (batch mode)</button>
       </div>
       <div>
         <label for="displayFields">Fields:</label>
@@ -61,7 +58,10 @@
           value="50"
         />
       </div>
-      <p><button id="submit" type="submit">Search</button></p>
+      <p>
+        <button id="submit" type="submit">Search</button>
+        <button class="plugin-only" type="button" id="abortButton" disabled>Abort</button>
+      </p>
     </form>
     <p id='resultCount'></p>
     <p id='navigation'></p>
