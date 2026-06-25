@@ -313,26 +313,32 @@ function z3950Connect(catalog) {
   z3950client.connect(z3950callback)
 }
 
-function z3950search(resultSetID, query) {
-  if(!z3950client?.isConnected()) {
-    z3950Connect(catalogID)
+function callSearchOrCache(resultSetID, query) {
+  latestResults = []
+  displayResults = []      
+  if(latestQuery == query && z3950client.isConnected()) {
+    console.log('cache')
+    expectedResultCount = Math.min(resultsPerPage,latestResultCount-startAtRecord+1)
+    z3950client.getRecords(resultSetID,startAtRecord,expectedResultCount)
+  } else {
+    console.log('search')
+    z3950client.query(resultSetID, query)
   }
-  var interval = setInterval(() => {
-    if(z3950client.isConnected()) {
-      latestResults = []
-      displayResults = []
-      clearInterval(interval)
-        if(latestQuery == query && z3950client.isConnected()) {
-          console.log('cache')
-          expectedResultCount = Math.min(resultsPerPage,latestResultCount-startAtRecord+1)
-          z3950client.getRecords(resultSetID,startAtRecord,expectedResultCount)
-        } else {
-          console.log('search')
-          z3950client.query(resultSetID, query)
-        }
-        latestQuery = query
-    }
-  },1000)
+  latestQuery = query
+}
+
+function z3950search(resultSetID, query) {
+  if(z3950client?.isConnected()) {
+    callSearchOrCache(resultSetID,query)
+  } else {
+    z3950Connect(catalogID)
+    var interval = setInterval(() => {
+      if(z3950client.isConnected()) {
+        callSearchOrCache(resultSetID,query)      
+        clearInterval(interval)                
+      }
+    },1000)
+  }
 }
 
 app.on('activate', () => {
