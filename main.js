@@ -332,6 +332,7 @@ function z3950search(resultSetID, query) {
     callSearchOrCache(resultSetID,query)
   } else {
     z3950Connect(catalogID)
+    latestQuery = ""
     var interval = setInterval(() => {
       if(z3950client.isConnected()) {
         callSearchOrCache(resultSetID,query)      

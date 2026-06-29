@@ -7,6 +7,7 @@ const BIB1_OBJID = '1.2.840.10003.3.1'
 const USMARC_OBJID = '1.2.840.10003.5.10'
 const UTF8_OBJID = '1.2.840.10003.15.3'
 const UCS_OBJID = [0x28, 0xD3, 0x16, 0x01, 0x00, 0x08]
+const timeout = 60000 //60 seconds
 
 export class Z3950Client {
     port = 0
@@ -28,9 +29,8 @@ export class Z3950Client {
     initiateConnection() {
         this.client = net.createConnection({ 
                 port: this.port, 
-                host: this.host
-            }
-        )
+                host: this.host,
+            })
     }
 
     isConnected() {
@@ -41,6 +41,7 @@ export class Z3950Client {
         this.initiateConnection()
         this.client.on('connect', () => {
             console.log('Connected to ' + this.client.remoteAddress + ':' + this.client.remotePort)
+            this.client.setTimeout(timeout)
             var initRequest = createInitRequest(this.username, this.password)
             this.client.write(new Uint8Array(initRequest.toBER()))
         })
@@ -100,6 +101,10 @@ export class Z3950Client {
                 }     
                 callback(respType,respValue)   
             }                 
+        });
+        this.client.on('timeout', () => {
+            console.log('Socket idle timeout reached. Closing connection.');
+            this.client.end(); 
         });
         this.client.on('close', () => {
             console.log('Connection closed');
