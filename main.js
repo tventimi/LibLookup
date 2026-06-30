@@ -227,15 +227,33 @@ function filterRecordFields(marc, fields = []) {
   var filteredFields = []
   if(fields.length > 0) {
     for(var i = 0; i < fields.length; i++) {
-      var fi = marc.get(fields[i])[0]
+      var tag = fields[i].substring(0,3)
+      var sf = fields[i].substring(3)  || "" 
+      var fi = marc.get(tag)[0]
       var val = ""
       if(fi) {
-        if(fi.tag.startsWith("00")) {      
+        if(tag.startsWith("00")) {      
           val = fi.value
         } else {
-          val = fi.subf.map((sf) => sf[1]).join(' ')
+          var selectedSubfields = fi.subf
+          if(sf.includes("=")) {
+            var selected880s = marc.get('880').filter((field) => 
+              field.subf.filter((subfield) => 
+                subfield[0] == '6' && subfield[1].startsWith(tag)
+              ).length > 0
+            )
+            selectedSubfields = selected880s.length > 0 ? selected880s[0].subf : []            
+            sf = sf.replaceAll('=','')
+          }
+
+          if(sf != "") {
+            selectedSubfields = selectedSubfields.filter((subfield) => (sf.includes(subfield[0])))
+          } else {
+            selectedSubfields = selectedSubfields.filter((subfield) => (!'0123456789'.includes(subfield[0])))
+          }
+          val = selectedSubfields.map((subfield) => subfield[1]).join(' ')
         }
-        if(i == 0) {
+        if(tag == '001') {
           val = val.replace(/^[a-z]*/,"")
         }
       }
