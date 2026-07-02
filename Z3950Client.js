@@ -1,6 +1,7 @@
 import net from 'net';
-import asn1js from 'asn1js';
+import asn1js, { Null } from 'asn1js';
 import { create } from 'domain';
+import { Z3950Query } from './Z3950Query.js';
 
 const MESSAGE_SIZE = 0x4000000
 const BIB1_OBJID = '1.2.840.10003.3.1'
@@ -187,19 +188,39 @@ function createCloseRequest() {
     var req = createASN1object({id: 48, value: [{id: 211, value: 0}]})
     return req    
 }
-    
+
+function zQueryToASN1(zQuery) {
+    var encoder = new TextEncoder()
+    var asn1 = null
+    if(zQuery.type == "operand") {
+        asn1 = {id: 0, value: [ //operand
+                    {id: 102, value: [ //attributes plus term
+                        {id: 44, value: zQuery.attributes.map((attr) => (
+                            {value: [ // attribute sequence
+                                {id: 120, value: attr.type}, //attribute type 
+                                {id: 121, value: attr.value} //attribute value 
+                            ]}
+                        ))},
+                        {id: 45, value: encoder.encode(zQuery.term)} // search term
+                    ]}
+                ]}
+    } else { //zQuery.type == "operator"
+        asn1 = {id: 1, value: [ //operator                    
+                    zQueryToASN1(zQuery.leftOperand), //left operand
+                    zQueryToASN1(zQuery.rightOperand), //right operand
+                    {id: 46, value: [{id: zQuery.operator, value: null}]} //operator type
+                ]}
+    }   
+    return asn1
+}
+
 function createSearchRequest(database, rsid, queryString) {
     var encoder = new TextEncoder()
     var bib1object = new asn1js.ObjectIdentifier({value: BIB1_OBJID})
 
-    var attrType = 1
-    var attrValue = 1016
-    var m = /@attr ([0-9]+)=([0-9]+) (.*)/.exec(queryString)
-    if(m) {
-        attrType = parseInt(m[1])
-        attrValue = parseInt(m[2])
-        queryString = m[3]
-    }
+
+    var zQuery = new Z3950Query(queryString)   
+    console.log(JSON.stringify(zQueryToASN1(zQuery)))
 
     var req = createASN1object({id: 22, value: [
         {id: 13, value: 0}, //Small set lower bound
@@ -213,15 +234,7 @@ function createSearchRequest(database, rsid, queryString) {
         {id: 21, value: [ //Query
             {id: 1, value: [ //RPN Query
                 {value: bib1object},
-                {id: 0, value: [ //operand
-                    {id: 102, value: [ //attributes plus term
-                        {id: 44, value: [ {value: [ // attribute sequence
-                            {id: 120, value: attrType}, //attribute type 
-                            {id: 121, value: attrValue} //attribute value 
-                        ]} ]},
-                        {id: 45, value: encoder.encode(queryString)} // search term
-                    ]}
-                ]}
+                zQueryToASN1(zQuery)
             ]}
         ]}
     ]})
@@ -262,7 +275,9 @@ function createASN1object(jsonOBJ) {
             unusedBits = jsonOBJ.unusedBits
         }
 
-        if(valueType == 'number') {          
+        if(newValue == null) {
+            newValue = new Uint8Array()
+        } else if(valueType == 'number') {          
             var byteLength = Math.ceil(Math.log2(newValue + 1) / 7);
             if(jsonOBJ.byteLength !== undefined) {
                 byteLength = jsonOBJ.byteLength
