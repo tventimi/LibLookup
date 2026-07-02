@@ -10,7 +10,7 @@ export class Z3950Query {
     queryString = ""
     constructor(query) {
         if(!query.includes('@')) {
-            if(!(queryv.startsWith('"') && query.endsWith('"'))) {
+            if(!(query.startsWith('"') && query.endsWith('"'))) {
                 query = "\"" + query + "\""
             }
             query = "@attr 1=1016 " + query
