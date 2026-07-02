@@ -227,9 +227,9 @@ function filterRecordFields(marc, fields = []) {
   var filteredFields = []
   if(fields.length > 0) {
     for(var i = 0; i < fields.length; i++) {
-      var tag = fields[i].substring(0,3)
+      var tag = fields[i].substring(0,3).replaceAll('x','.')
       var sf = fields[i].substring(3)  || "" 
-      var fi = marc.get(tag)[0]
+      var fi = marc.get(new RegExp(`^${tag}`))[0]
       var val = ""
       if(fi) {
         if(tag.startsWith("00")) {      
