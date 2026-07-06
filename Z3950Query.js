@@ -9,12 +9,6 @@ export class Z3950Query {
     term = null
     queryString = ""
     constructor(query) {
-        if(!query.includes('@')) {
-            if(!(query.startsWith('"') && query.endsWith('"'))) {
-                query = "\"" + query + "\""
-            }
-            query = "@attr 1=1016 " + query
-        }
         var queryTokens = this.tokenize(query)
         var isAttribute = false
         for(var i = 0; i < queryTokens.length; i++) {
@@ -51,6 +45,9 @@ export class Z3950Query {
                         this.attributes.push({type: parseInt(m[1]), value: parseInt(m[2])})
                     }
                 } else {
+                    if(this.attributes.length == 0) {
+                        this.attributes.push({type: 1, value: 1016})
+                    }
                     this.term = token.replace(/^\"/, '').replace(/\"$/, '')
                     break
                 }
