@@ -8,7 +8,7 @@ const BIB1_OBJID = '1.2.840.10003.3.1'
 const USMARC_OBJID = '1.2.840.10003.5.10'
 const UTF8_OBJID = '1.2.840.10003.15.3'
 const UCS_OBJID = [0x28, 0xD3, 0x16, 0x01, 0x00, 0x08]
-const timeout = 60000 //60 seconds
+const timeout = 600000 //10 minutes
 
 export class Z3950Client {
     port = 0
@@ -105,6 +105,7 @@ export class Z3950Client {
         });
         this.client.on('timeout', () => {
             console.log('Socket idle timeout reached. Closing connection.');
+            this.client.setTimeout(0)
             this.client.end(); 
         });
         this.client.on('close', () => {
@@ -225,7 +226,6 @@ function createSearchRequest(database, rsid, queryString) {
         }
     }
     var zQuery = new Z3950Query(queryString)   
-    console.log(JSON.stringify(zQuery, null, 2))
 
     var req = createASN1object({id: 22, value: [
         {id: 13, value: 0}, //Small set lower bound

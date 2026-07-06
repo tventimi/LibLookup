@@ -26,6 +26,7 @@ const defaultPageSize = 50
 var resultsPerPage = defaultPageSize
 var latestQuery = ""
 var resultsStream = new Subject()
+var requestStream = new Subject()
 var latestResultCount = 0
 var latestResults = []
 var displayResults = []
@@ -61,116 +62,136 @@ const createWindow = () => {
       //cert: fs.readFileSync('./webserver/server.crt')
     };
     
-    const server = http.createServer(serverOptions, (request, response) => {    
-      if (request.method === 'OPTIONS') {
-        response.writeHead(204, headers);
-        response.end();
-        return;
-      } 
 
-      var url = new URL(request.url, `http://${request.headers.host}`)
-      var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
-      filename = app.isPackaged ? path.join(app.getAppPath(),filename) :  filename
-      console.log(`Received request for ${filename}`) 
-      fs.readFile(filename, (err, data) => {  
-        if (err) {
-          response.writeHead(404);
-          response.end('404 Not Found');
-          return;
-        } 
-        response.writeHead(200, headers);
-        var outputDoc = cheerio.load(data.toString())
-        var catalog = url.searchParams.get('catalog')
-        var query = url.searchParams.get('q')
-        var singleRecord = (url.searchParams.get('singleRecord') == 'true')
-        var submittedDisplayFields = url.searchParams.get('displayFields')
-        var format = url.searchParams.get('format') || 'html'
-        var pageType = url.searchParams.get('pageType') || 'web' 
-        startAtRecord = +(url.searchParams.get('start') || 1)
-        var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
-        resultsPerPage = Math.min(maxRecs,defaultPageSize)
+    var serverReady = true
+    requestStream.subscribe((reqResp) => {
+      var requestInterval = setInterval(() => {
+        if(serverReady == true) {
+          serverReady = false
+          var request = reqResp.req
+          var response = reqResp.resp
+          if (request.method === 'OPTIONS') {
+            response.writeHead(204, headers);
+            response.end();
+            serverReady = true
+            return;
+          } 
 
-        if(submittedDisplayFields) {
-          displayFields = submittedDisplayFields.split(',').map(f => f.trim())
-        }
-        if(format == 'html') { 
-          if(filename.endsWith('index.html')) {      
-            var catalogHTML = "" 
-            var catalogList = outputDoc('#catalog')
-            Object.keys(catalogs).forEach((cat) => {
-              const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
-              catalogList.append(catOption)
-            })
-            if(pageType != "plugin") {
-              outputDoc('.plugin-only').remove()
-            }             
-          }
-        }
-        if(!filename.endsWith('.html')) {
-          response.end(outputDoc.text())
-          return
-        }
-        if(!(catalog && query)) {   
-          if(pageType == 'plugin') {      
-            response.end('<form id="queryForm">' + outputDoc('#queryForm').html() + '</form>') 
-          } else {
-            outputDoc('.plugin-only').remove()
-            response.end(outputDoc.html())
-          }
-          return
-        }
+          var url = new URL(request.url, `http://${request.headers.host}`)
+          var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
+          filename = app.isPackaged ? path.join(app.getAppPath(),filename) :  filename
+          console.log(`Received request for ${filename}`) 
+          fs.readFile(filename, (err, data) => {  
+            if (err) {
+              response.writeHead(404);
+              response.end('404 Not Found');
+              serverReady = true
+              return;
+            } 
+            response.writeHead(200, headers);
+            var outputDoc = cheerio.load(data.toString())
+            var catalog = url.searchParams.get('catalog')
+            var query = url.searchParams.get('q')
+            var singleRecord = (url.searchParams.get('singleRecord') == 'true')
+            var submittedDisplayFields = url.searchParams.get('displayFields')
+            var format = url.searchParams.get('format') || 'html'
+            var pageType = url.searchParams.get('pageType') || 'web' 
+            startAtRecord = +(url.searchParams.get('start') || 1)
+            var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
+            resultsPerPage = Math.min(maxRecs,defaultPageSize)
 
-        resultSetID = "1"
-        resultsStream.subscribe(
-          results => {
-            if(results == null) {
-              if(format == 'html') {
-                response.end(outputDoc.html())
-              } else {
-                response.end(outputDoc('#results').text())                 
-              }
-            } else if(results.count == 0) {
-              if(format == 'html') {
-                response.end("No results found")
-              } else {
-                response.end()
-              }
-            } else {              
-              if(!Array.isArray(results)) {
-                outputDoc('#results').append(renderMARC(results))
-              } else {
-                var navbar = outputDoc("#navigation")
-                if(startAtRecord > 1) {
-                  var prevURL = new URL(url)
-                  prevURL.searchParams.set('start',Math.max(startAtRecord - resultsPerPage,1))
-                  navbar.append(`<a href='index.html${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
-                }
-                if(startAtRecord + displayResults.length <= latestResultCount) {
-                  var nextURL = new URL(url)
-                  nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
-                  navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
-                }
-                outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
-                outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
+            if(submittedDisplayFields) {
+              displayFields = submittedDisplayFields.split(',').map(f => f.trim())
+            }
+            if(format == 'html') { 
+              if(filename.endsWith('index.html')) {      
+                var catalogHTML = "" 
+                var catalogList = outputDoc('#catalog')
+                Object.keys(catalogs).forEach((cat) => {
+                  const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
+                  catalogList.append(catOption)
+                })
+                if(pageType != "plugin") {
+                  outputDoc('.plugin-only').remove()
+                }             
               }
             }
-          },                
-        )
-        if(singleRecord && displayResults.length > 0) {
-          displayResults = latestResults.filter((rec) => {
-            return rec.get('001')[0].value.includes(query.replace("@attr 1=12 ",""))
+            if(!filename.endsWith('.html')) {
+              response.end(outputDoc.text())
+              serverReady = true
+              return
+            }
+            if(!(catalog && query)) {   
+              if(pageType == 'plugin') {      
+                response.end('<form id="queryForm">' + outputDoc('#queryForm').html() + '</form>') 
+              } else {
+                outputDoc('.plugin-only').remove()
+                response.end(outputDoc.html())
+              }
+              serverReady = true
+              return
+            }
+
+            resultSetID = "1"
+            resultsStream.subscribe(
+              results => {
+                if(results == null) {
+                  if(format == 'html') {
+                    response.end(outputDoc.html())
+                  } else {
+                    response.end(outputDoc('#results').text())                 
+                  }
+                  serverReady = true
+                } else if(results.count == 0) {
+                  if(format == 'html') {
+                    response.end("No results found")
+                  } else {
+                    response.end()
+                  }
+                  serverReady = true
+                } else {              
+                  if(!Array.isArray(results)) {
+                    outputDoc('#results').append(renderMARC(results))
+                  } else {
+                    var navbar = outputDoc("#navigation")
+                    if(startAtRecord > 1) {
+                      var prevURL = new URL(url)
+                      prevURL.searchParams.set('start',Math.max(startAtRecord - resultsPerPage,1))
+                      navbar.append(`<a href='index.html${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
+                    }
+                    if(startAtRecord + displayResults.length <= latestResultCount) {
+                      var nextURL = new URL(url)
+                      nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
+                      navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
+                    }
+                    outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
+                    outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
+                  }
+                }
+              }                
+            )
+            if(singleRecord && displayResults.length > 0) {
+              displayResults = latestResults.filter((rec) => {
+                return rec.get('001')[0].value.includes(query.replace("@attr 1=12 ",""))
+              })
+              resultsStream.next(displayResults[0])
+              resultsStream.next(null)
+            } else {
+              if(catalog != catalogID) {
+                catalogID = catalog
+                latestQuery = ""
+                z3950Connect(catalogID)
+              } 
+              z3950search(resultSetID, query)         
+            }      
           })
-          resultsStream.next(displayResults[0])
-          resultsStream.next(null)
-        } else {
-          if(catalog != catalogID) {
-            catalogID = catalog
-            latestQuery = ""
-            z3950Connect(catalogID)
-          } 
-          z3950search(resultSetID, query)         
-        }      
-      })   
+          clearInterval(requestInterval)
+        }
+      },100) 
+    })
+
+    const server = http.createServer(serverOptions, (request, response) => { 
+      requestStream.next({req: request, resp: response})               
     })
     server.listen(3950, 'localhost', () => {
       console.log('Electron app listening for HTTP calls on http://localhost:3950');
