@@ -216,7 +216,8 @@ function z3950callback(respType, respBody) {
       latestResultCount = resultCount
       latestResults = []
       displayResults = []
-      expectedResultCount = Math.min(resultCount,resultsPerPage)
+      expectedResultCount = Math.min(resultCount-startAtRecord+1,resultsPerPage)
+      console.log("**" + expectedResultCount + "**")
       z3950client.getRecords(resultSetID, startAtRecord, expectedResultCount)
       break;
     case 'presentResponse':
