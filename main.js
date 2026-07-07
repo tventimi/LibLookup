@@ -4,7 +4,7 @@ import { Marc } from 'marcjs'
 import * as readline from 'node:readline';
 import * as fs from 'node:fs';
 import * as path from 'path';
-import * as http from 'http'
+import * as https from 'https'
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream'
 import { shell } from 'electron'
@@ -20,7 +20,7 @@ if (started) app.quit();
 
 Menu.setApplicationMenu(null);
 
-const indexURL = 'http://localhost:3950/'
+const indexURL = 'https://localhost:3950/'
 const defaultPageSize = 50
 
 var resultsPerPage = defaultPageSize
@@ -58,8 +58,10 @@ const createWindow = () => {
     }; 
     
     const serverOptions = {
-      //key: fs.readFileSync('./webserver/server.key'),
-      //cert: fs.readFileSync('./webserver/server.crt')
+      key: fs.readFileSync(
+        app.isPackaged ? path.join(app.getAppPath(),'./webserver/server.key') :  './webserver/server.key'),
+      cert: fs.readFileSync(
+        app.isPackaged ? path.join(app.getAppPath(),'./webserver/server.crt') :  './webserver/server.crt')
     };
     
 
@@ -190,7 +192,7 @@ const createWindow = () => {
       },100) 
     })
 
-    const server = http.createServer(serverOptions, (request, response) => { 
+    const server = https.createServer(serverOptions, (request, response) => { 
       requestStream.next({req: request, resp: response})               
     })
     server.listen(3950, 'localhost', () => {
