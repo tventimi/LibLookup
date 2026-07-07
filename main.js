@@ -20,7 +20,8 @@ if (started) app.quit();
 
 Menu.setApplicationMenu(null);
 
-const indexURL = 'https://localhost:3950/'
+const libLookupDomain = 'localhost'
+const libLookupPort = 3950
 const defaultPageSize = 50
 
 var resultsPerPage = defaultPageSize
@@ -195,8 +196,8 @@ const createWindow = () => {
     const server = https.createServer(serverOptions, (request, response) => { 
       requestStream.next({req: request, resp: response})               
     })
-    server.listen(3950, 'localhost', () => {
-      console.log('Electron app listening for HTTP calls on http://localhost:3950');
+    server.listen(libLookupPort, libLookupDomain, () => {
+      console.log(`Electron app listening for HTTP calls on https://${libLookupDomain}:${libLookupPort}`);
     });
   })  
 }
@@ -400,5 +401,5 @@ app.on('window-all-closed', () => {
 })
 
 ipcMain.on('button-clicked', (event) => {
-    shell.openExternal(indexURL)
+    shell.openExternal(`https://${libLookupDomain}:${libLookupPort}/`)
 });
