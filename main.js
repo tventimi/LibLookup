@@ -58,8 +58,10 @@ const createWindow = () => {
     }; 
     
     const serverOptions = {
-      key: fs.readFileSync('./webserver/server.key'),
-      cert: fs.readFileSync('./webserver/server.crt')
+      key: fs.readFileSync(
+        app.isPackaged ? path.join(app.getAppPath(),'./webserver/server.key') :  './webserver/server.key'),
+      cert: fs.readFileSync(
+        app.isPackaged ? path.join(app.getAppPath(),'./webserver/server.crt') :  './webserver/server.crt')
     };
     
 
