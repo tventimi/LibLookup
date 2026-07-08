@@ -219,13 +219,8 @@ function createSearchRequest(database, rsid, queryString) {
     var encoder = new TextEncoder()
     var bib1object = new asn1js.ObjectIdentifier({value: BIB1_OBJID})
 
-
-    if(!queryString.includes('@')) {
-        if(!(queryString.startsWith('"') && queryString.endsWith('"'))) {
-            queryString = "\"" + queryString + "\""
-        }
-    }
     var zQuery = new Z3950Query(queryString)   
+    console.log(JSON.stringify(zQuery,null,2))
 
     var req = createASN1object({id: 22, value: [
         {id: 13, value: 0}, //Small set lower bound

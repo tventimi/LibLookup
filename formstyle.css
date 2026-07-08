@@ -1,0 +1,8 @@
+#displayFields, #queryTerm, #searchTerms {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+div {
+    padding: 5px;
+}

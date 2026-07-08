@@ -20,7 +20,7 @@ if (started) app.quit();
 
 Menu.setApplicationMenu(null);
 
-const indexURL = 'https://localhost:3950/'
+const baseURL = 'https://localhost:3950/'
 const defaultPageSize = 50
 
 var resultsPerPage = defaultPageSize
@@ -50,10 +50,11 @@ const createWindow = () => {
   })
 
   win.loadFile('config.html').then(() => {
-    const headers = {
+    var headers = {
       'Access-Control-Allow-Origin': '*', 
       'Access-Control-Allow-Headers': '*',
       'Access-Control-Allow-Methods': 'OPTIONS, POST, GET',
+      'Access-Control-Allow-Private-Network': 'true',
       'Access-Control-Max-Age': 2592000 // 30 days
     }; 
     
@@ -90,10 +91,16 @@ const createWindow = () => {
               serverReady = true
               return;
             } 
+            if(filename.endsWith('png')) {
+              headers['Content-Type'] = 'image/png'
+              response.writeHead(200, headers);
+              response.end(data)
+              return
+            }
             response.writeHead(200, headers);
             var outputDoc = cheerio.load(data.toString())
             var catalog = url.searchParams.get('catalog')
-            var query = url.searchParams.get('q')
+            var query = decodeURIComponent(url.searchParams.get('q'))
             var singleRecord = (url.searchParams.get('singleRecord') == 'true')
             var submittedDisplayFields = url.searchParams.get('displayFields')
             var format = url.searchParams.get('format') || 'html'
@@ -116,7 +123,7 @@ const createWindow = () => {
                 if(pageType != "plugin") {
                   outputDoc('.plugin-only').remove()
                 }             
-              }
+              }              
             }
             if(!filename.endsWith('.html')) {
               response.end(outputDoc.text())
@@ -124,8 +131,19 @@ const createWindow = () => {
               return
             }
             if(!(catalog && query)) {   
-              if(pageType == 'plugin') {      
-                response.end('<form id="queryForm">' + outputDoc('#queryForm').html() + '</form>') 
+              if(pageType == 'plugin') {                     
+                outputDoc('*').each((index, element) => {
+                  if(outputDoc(element).attr('href')) {
+                    var newLink = outputDoc(element).attr('href').replaceAll('./',baseURL)
+                    outputDoc(element).attr('href',newLink)
+                  }
+                  if(outputDoc(element).attr('src')) {
+                    var newSrc = outputDoc(element).attr('src').replaceAll('./',baseURL)
+                    outputDoc(element).attr('src',newSrc)
+                  }
+                })           
+                var formHTML = outputDoc('#queryForm').html()
+                response.end(`<form id="queryForm">${formHTML}</form>`) 
               } else {
                 outputDoc('.plugin-only').remove()
                 response.end(outputDoc.html())
@@ -219,7 +237,6 @@ function z3950callback(respType, respBody) {
       latestResults = []
       displayResults = []
       expectedResultCount = Math.min(resultCount-startAtRecord+1,resultsPerPage)
-      console.log("**" + expectedResultCount + "**")
       z3950client.getRecords(resultSetID, startAtRecord, expectedResultCount)
       break;
     case 'presentResponse':
@@ -400,5 +417,5 @@ app.on('window-all-closed', () => {
 })
 
 ipcMain.on('button-clicked', (event) => {
-    shell.openExternal(indexURL)
+    shell.openExternal(baseURL)
 });

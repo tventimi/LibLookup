@@ -9,7 +9,23 @@ body {
 .marc {
     border-collapse: collapse;
 }
+
 .marc td,th {
     border: 1px solid black;
     padding: 5px;
+}
+
+.sidebar {
+    width: 250px;
+    position: fixed;
+}
+
+.container {
+    display: flex
+}
+
+#resultsPanel {
+    flex: 1;
+    padding: 20px;
+    margin-left: 250px
 }

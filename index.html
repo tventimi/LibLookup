@@ -15,57 +15,103 @@
     <title>LibLookup</title>
   </head>
   <body>
-    <h3>LibLookup</h3>
-    <form id="queryForm">
-      <div>
-        <label for="catalog">Catalog:</label>
-        <select title="Catalog" name="catalog" id="catalog"></select>
+    <div class="container">
+      <div class="sidebar">
+        <h3>LibLookup</h3>
+        <form id="queryForm">
+          <link rel="stylesheet" href="./formstyle.css" type="text/css"/>
+          <div>
+            <label for="catalog">Catalog:</label>
+            <select title="Catalog" name="catalog" id="catalog"></select>
+          </div>
+          <div class='plugin-only'>
+            <label for='maxRecs'>Maximum records:</label>
+            <input 
+              title="Maximum Records"
+              type="text"
+              id="maxRecs"
+              name="maxRecs"
+              size="10"
+              value="50"
+            />
+          </div>
+          <div>
+          <label for="displayFields">Fields:</label>
+          </div>
+          <div>
+            <input 
+              title="Display fields" 
+              placeholder='e.g. 100,245' 
+              type="text" 
+              id="displayFields"
+              name="displayFields"
+              value="100,245"
+            />
+          </div><div>
+            <label for="q">Query:</label>
+          </div><div>
+            <select title="operator"  id="operator" disabled>
+              <option value="and">AND</option>
+              <option value="or">OR</option>
+              <option value="not">NOT</option>
+            </select> 
+            <select title="index" id="index">
+              <option value="keyword">Keyword</option>
+              <option value="title">Title</option>
+              <option value="author">Author</option>
+              <option value="subject">Subject</option>
+              <option value="isbn">ISBN</option>
+              <option value="issn">ISSN</option>
+              <option value="date">Date</option>
+              <option value="recno">Record #</option>
+              <option value="z3950">Raw Z39.50</option>
+            </select>
+            <select title="relator" id="relator">
+              <option value="=">has all</option>
+              <option value="==">phrase</option>
+            </select>
+          </div>
+          <div>
+            <input
+              title="query term"  
+              type="text" 
+              id="queryTerm"
+            />
+            <input 
+              type="hidden"
+              id="queryString"
+              name="q"
+            />
+          </div>
+          <div>
+            <button type="button" id="addTermButton" disabled>Add</button>
+            <button type="button" id="deleteTermButton" disabled>Delete</button>
+            <button type="button" id="insertSelectionButton" class="plugin-only">Insert Selected Range</button>
+          </div> 
+          <div>
+            <select title="searchTerms" id="searchTerms" size="3"></select>
+          </div>     
+          <div>
+            <button id="submit" type="submit">Search</button>
+            <button class="plugin-only" type="button" id="abortButton" disabled>Abort</button>
+          </div>
+          <script src ="./dynamicform.js" type="application/javascript"></script>
+        </form>
       </div>
-      <div>
-        <label for="q">Query:</label>
-        <input 
-          title="Z39.50 query string" 
-          placeholder='Keyword or Z39.50 query string' 
-          type="text" 
-          id="queryString"
-          name="q"
-          size="30"
-        />
+      <div id="resultsPanel">
+        <div id='resultCount'></div>
+        <div id='navigation'></div>
+        <div id='results'>
+          <!--
+          <p>
+            <img title="LibLookup" src="./images/LL-icon.png" width="200">
+          </p><p>
+            Things are looking up...
+          </p>
+          -->
+        </div>
       </div>
-      <div class="plugin-only">
-        <button type="button" id="insertSelectionButton">Insert Selection (batch mode)</button>
-      </div>
-      <div>
-        <label for="displayFields">Fields:</label>
-        <input 
-          title="Display fields" 
-          placeholder='e.g. 100,245' 
-          type="text" 
-          id="displayFields"
-          name="displayFields"
-          size="30"
-          value="100,245"
-        />
-      </div>
-      <div class='plugin-only'>
-        <label for='maxRecs'>Maximum records:</label>
-        <input 
-          title="Maximum Records"
-          type="text"
-          id="maxRecs"
-          name="maxRecs"
-          size="10"
-          value="50"
-        />
-      </div>
-      <p>
-        <button id="submit" type="submit">Search</button>
-        <button class="plugin-only" type="button" id="abortButton" disabled>Abort</button>
-      </p>
-    </form>
-    <p id='resultCount'></p>
-    <p id='navigation'></p>
-    <p id='results'></p>
+    </div>
     <script src ="./webrenderer.js" type="application/javascript"></script>
   </body>
 </html>
