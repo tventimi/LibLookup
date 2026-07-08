@@ -20,7 +20,9 @@ if (started) app.quit();
 
 Menu.setApplicationMenu(null);
 
-const baseURL = 'https://localhost:3950/'
+const libLookupDomain = 'localhost'
+const libLookupPort = 3950
+const baseURL = `https://${libLookupDomain}:${libLookupPort}/`
 const defaultPageSize = 50
 
 var resultsPerPage = defaultPageSize
@@ -213,8 +215,8 @@ const createWindow = () => {
     const server = https.createServer(serverOptions, (request, response) => { 
       requestStream.next({req: request, resp: response})               
     })
-    server.listen(3950, 'localhost', () => {
-      console.log('Electron app listening for HTTP calls on http://localhost:3950');
+    server.listen(libLookupPort, libLookupDomain, () => {
+      console.log(`Electron app listening for HTTP calls on https://${libLookupDomain}:${libLookupPort}`);
     });
   })  
 }
