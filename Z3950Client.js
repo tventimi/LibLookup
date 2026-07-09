@@ -8,7 +8,7 @@ const BIB1_OBJID = '1.2.840.10003.3.1'
 const USMARC_OBJID = '1.2.840.10003.5.10'
 const UTF8_OBJID = '1.2.840.10003.15.3'
 const UCS_OBJID = [0x28, 0xD3, 0x16, 0x01, 0x00, 0x08]
-const timeout = 300000 //5 minutes
+const timeout = 180000 //3 minutes
 
 export class Z3950Client {
     port = 0

@@ -1,8 +1,16 @@
-#displayFields, #queryTerm, #searchTerms {
+#displayFields, #queryTerm  {
     width: 100%;
     box-sizing: border-box;
 }
 
 div {
     padding: 5px;
+}
+
+.scroll-container {
+    overflow-x: scroll;
+}
+
+#searchTerms {        
+    min-width: 100%; 
 }

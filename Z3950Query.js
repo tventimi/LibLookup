@@ -19,36 +19,51 @@ export class Z3950Query {
     term = null
     queryString = ""
 
-    constructor(query) {
-        var queryTokens = this.tokenize(query)
+    constructor(query, isRaw = false) {
+        var queryTokens = this.tokenize(query)        
+        if(isRaw){
+            this.rawZ3950toQuery(query)
+            return
+        }
         for(var i = 0; i < queryTokens.length; i += 4) {
             var index = queryTokens[i]
             var relator = queryTokens[i+1]
             var searchTerm = queryTokens[i+2]
 
-            if(index == 'z3950') {
-                rawZ3950toQuery(searchTerm)
+            if(i+3 < queryTokens.length) {
+                this.type = "operator"
+                var operator = queryTokens[i+3].toLowerCase().replace("not","andnot")
+                this.operator = operators[operator]
+                this.leftOperand = new Z3950Query(queryTokens.slice(0,3).join(" "))
+                this.rightOperand =  new Z3950Query(queryTokens.slice(4).join(" "))
+                this.queryString = this.leftOperand.queryString + " " + queryTokens[i+3] + " " + this.rightOperand.queryString
+                return
             } else {
-                if(i+3 < queryTokens.length) {
-                    this.type = "operator"
-                    var operator = queryTokens[i+3].toLowerCase().replace("not","andnot")
-                    this.operator = operators[operator]
-                    this.leftOperand = new Z3950Query(queryTokens.slice(0,3).join(" "))
-                    this.rightOperand =  new Z3950Query(queryTokens.slice(4).join(" "))
-                    this.queryString = this.leftOperand.queryString + " " + queryTokens[i+3] + " " + this.rightOperand.queryString
-                    return
+                this.type = "operand"
+                searchTerm = searchTerm.replace(/^\"/, '').replace(/\"$/, '')
+                if(index == "z3950") {
+                    var zQuery = new Z3950Query(searchTerm,true)
+                    this.type = zQuery.type
+                    this.queryString = zQuery.queryString
+                    if(zQuery.type == 'operand') {
+                        this.attributes = zQuery.attributes
+                        this.term = zQuery.term                    
+                    } else {
+                        this.operator = zQuery.operator
+                        this.leftOperand = zQuery.leftOperand
+                        this.rightOperand = zQuery.rightOperand
+                    }
                 } else {
-                    this.type = "operand"
                     this.attributes = [{type: 1, value: indexes[index]}]
                     if(relator == "==") {
                         this.attributes.push({type: 4, value: 1})
-                    }
-                    this.term = searchTerm.replace(/^\"/, '').replace(/\"$/, '')
+                    } 
+                    this.term = searchTerm
                     this.queryString = queryTokens.slice(0,3).join(" ")
-                    break
                 }
-            }            
-        }  
+                break
+            }
+        }              
     }
 
     rawZ3950toQuery(query) {
@@ -64,10 +79,10 @@ export class Z3950Query {
                 } else {
                     this.type = "operator"
                     this.operator = operators[token.substring(1)]
-                    this.leftOperand = rawZ3950toQuery(queryTokens.slice(i + 1).join(" "))
+                    this.leftOperand = new Z3950Query(queryTokens.slice(i + 1).join(" "),true)
                     this.queryString += " " + this.leftOperand.queryString
                     var lengthSoFar = this.queryString.length
-                    this.rightOperand =  rawZ3950toQuery(query.substring(lengthSoFar))
+                    this.rightOperand =  new Z3950Query(query.substring(lengthSoFar),true)
                     this.queryString += " " + this.rightOperand.queryString
                     return
                 }
