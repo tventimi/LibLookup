@@ -1,15 +1,25 @@
 document.getElementById("addTermButton").addEventListener("click", addTerm);
-document.getElementById("queryTerm").addEventListener("keydown", function(event) {
-    if(document.getElementById("queryTerm").value.length > 0) {
-        document.getElementById("addTermButton").disabled = false
-    } else {
-        document.getElementById("addTermButton").disabled = true
-    }
+var queryTerm = document.getElementById("queryTerm")
+queryTerm.addEventListener("keydown", function(event) {    
     if(event.key === "Enter") {
         event.preventDefault()
         addTerm();
     }
 });
+queryTerm.addEventListener("input", function(event) {
+    if(queryTerm.value.length > 0) {
+        document.getElementById("addTermButton").disabled = false
+    } else {
+        document.getElementById("addTermButton").disabled = true
+    }
+});
+
+var insertSelectionButton = document.getElementById("insertSelectionButton")
+if(insertSelectionButton) {
+    insertSelectionButton.addEventListener("click", function() {
+        document.getElementById("addTermButton").disabled = false
+    })
+}
 
 function addTerm() {
     var term = document.getElementById("queryTerm").value;
@@ -29,6 +39,7 @@ function addTerm() {
         "\"" + term + "\""
     searchTerms.add(new Option(queryTerm));
     operator.disabled = false;
+    document.getElementById("addTermButton").disabled = true;
     document.getElementById("deleteTermButton").disabled = false;
     document.getElementById("queryTerm").value = "";
     updateQueryString()
