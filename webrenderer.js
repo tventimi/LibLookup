@@ -13,6 +13,8 @@ urlParams.forEach((value, key) => {
         var queryString = decodeURIComponent(value)
         var queryTokens = tokenize(queryString)
         for(var i = 0; i < queryTokens.length; i += 3) {
+            document.getElementById("deleteTermButton").disabled = false
+            document.getElementById("operator").disabled = false
             if(i == 0) {
                 searchTerms.add(new Option(queryTokens.slice(i,i+3).join(' ')))
             } else {

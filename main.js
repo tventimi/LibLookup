@@ -194,7 +194,8 @@ const createWindow = () => {
             )
             if(singleRecord && displayResults.length > 0) {
               displayResults = latestResults.filter((rec) => {
-                return rec.get('001')[0].value.includes(query.replace("@attr 1=12 ",""))
+                return rec.get('001')[0].value.includes(decodeURIComponent(query)
+                  .replace(/.*recno = ([0-9]*).*/,"$1"))
               })
               resultsStream.next(displayResults[0])
               resultsStream.next(null)
@@ -322,7 +323,7 @@ function renderRecords(records,format = 'html') {
     for(var i = 1; i < records.length; i++) {
       rendered += "<tr>"
       rendered += `<td><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
-            `&q=%40attr+1%3D12+${records[i][0]}&displayFields=${displayFields}'>View</a></td>`
+            `&q=recno+%3D+${records[i][0]}&displayFields=${displayFields}'>View</a></td>`
       rendered += "<td>" + records[i].slice(1).join("</td><td>") + "</td>"
       rendered += "</tr>"
     }
