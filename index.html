@@ -24,30 +24,7 @@
             <label for="catalog">Catalog:</label>
             <select title="Catalog" name="catalog" id="catalog"></select>
           </div>
-          <div class='plugin-only'>
-            <label for='maxRecs'>Maximum records:</label>
-            <input 
-              title="Maximum Records"
-              type="text"
-              id="maxRecs"
-              name="maxRecs"
-              size="10"
-              value="50"
-            />
-          </div>
           <div>
-          <label for="displayFields">Fields:</label>
-          </div>
-          <div>
-            <input 
-              title="Display fields" 
-              placeholder='e.g. 100,245' 
-              type="text" 
-              id="displayFields"
-              name="displayFields"
-              value="100,245"
-            />
-          </div><div>
             <label for="q">Query:</label>
           </div><div>
             <select title="operator"  id="operator" disabled>
@@ -90,7 +67,31 @@
           </div> 
           <div>
             <select title="searchTerms" id="searchTerms" size="3"></select>
-          </div>     
+          </div>          
+          <div>
+          <label for="displayFields">Fields:</label>
+          </div>
+          <div>
+            <input 
+              title="Display fields" 
+              placeholder='e.g. 100,245' 
+              type="text" 
+              id="displayFields"
+              name="displayFields"
+              value="100,245"
+            />
+          </div> 
+          <div class='plugin-only'>
+            <label for='maxRecs'>Maximum records:</label>
+            <input 
+              title="Maximum Records"
+              type="text"
+              id="maxRecs"
+              name="maxRecs"
+              size="10"
+              value="50"
+            />
+          </div>    
           <div>
             <button id="submit" type="submit">Search</button>
             <button class="plugin-only" type="button" id="abortButton" disabled>Abort</button>
@@ -102,13 +103,6 @@
         <div id='resultCount'></div>
         <div id='navigation'></div>
         <div id='results'>
-          <!--
-          <p>
-            <img title="LibLookup" src="./images/LL-icon.png" width="200">
-          </p><p>
-            Things are looking up...
-          </p>
-          -->
         </div>
       </div>
     </div>
