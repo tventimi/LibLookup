@@ -21,14 +21,15 @@ if(insertSelectionButton) {
     })
 }
 
-document.getElementById("submit").addEventListener("click", function(event) {
-    if(document.getElementById("queryTerm").value == "") {
-        document.getElementById("resultCount").innerHTML = "Please enter a search term."
-        event.preventDefault()
-        return
-    }
+document.getElementById("submit").addEventListener("click", function(event) {   
     if(document.getElementById("searchTerms").length == 0) {
-        addTerm()
+        if(document.getElementById("queryTerm").value == "") {
+            document.getElementById("resultCount").innerHTML = "Please enter a search term."
+            event.preventDefault()
+            return
+        } else {
+            addTerm()
+        }
     }
 })
 
