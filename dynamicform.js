@@ -21,6 +21,17 @@ if(insertSelectionButton) {
     })
 }
 
+document.getElementById("submit").addEventListener("click", function(event) {
+    if(document.getElementById("queryTerm").value == "") {
+        document.getElementById("resultCount").innerHTML = "Please enter a search term."
+        event.preventDefault()
+        return
+    }
+    if(document.getElementById("searchTerms").length == 0) {
+        addTerm()
+    }
+})
+
 function addTerm() {
     var term = document.getElementById("queryTerm").value;
     if(term === "") {
