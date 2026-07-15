@@ -1,4 +1,3 @@
-document.getElementById("addTermButton").addEventListener("click", addTerm);
 var queryTerm = document.getElementById("queryTerm")
 queryTerm.addEventListener("keydown", function(event) {    
     if(event.key === "Enter") {
@@ -33,6 +32,7 @@ document.getElementById("submit").addEventListener("click", function(event) {
     }
 })
 
+document.getElementById("addTermButton").addEventListener("click", addTerm);
 function addTerm() {
     var term = document.getElementById("queryTerm").value;
     if(term === "") {
@@ -53,12 +53,12 @@ function addTerm() {
     operator.disabled = false;
     document.getElementById("addTermButton").disabled = true;
     document.getElementById("deleteTermButton").disabled = false;
+    document.getElementById("clearTermsButton").disabled = false;
     document.getElementById("queryTerm").value = "";
     updateQueryString()
 }
 
 document.getElementById("deleteTermButton").addEventListener("click", deleteTerm);
-
 function deleteTerm() {
     var searchTerms = document.getElementById("searchTerms")
     if(searchTerms.selectedIndex === 0 && searchTerms.length > 1) {
@@ -71,9 +71,18 @@ function deleteTerm() {
     if(searchTerms.length === 0) {
         document.getElementById("operator").disabled = true;
         document.getElementById("deleteTermButton").disabled = true;
+        document.getElementById("clearTermsButton").disabled = true;
     }
     updateQueryString()
 }
+
+document.getElementById("clearTermsButton").addEventListener("click", clearTerms);
+function clearTerms() {
+    document.getElementById("searchTerms").innerHTML = '';
+    document.getElementById("deleteTermButton").disabled = true;
+    document.getElementById("clearTermsButton").disabled = true;
+}
+
 
 function updateQueryString() {
     var options = Array.from(document.getElementById("searchTerms").options)
