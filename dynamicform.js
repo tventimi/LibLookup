@@ -78,5 +78,5 @@ function deleteTerm() {
 function updateQueryString() {
     var options = Array.from(document.getElementById("searchTerms").options)
     var queryString = options.map(option => option.value).join(" ")
-    document.getElementById("queryString").value = encodeURIComponent(queryString)
+    document.getElementById("queryString").value = queryString //encodeURIComponent(queryString)
 }
