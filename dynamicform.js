@@ -90,10 +90,9 @@ function updateQueryString() {
 function updateBatchMode() {
     const columnRegex = /\[\[[A-Z]+\]\]/
     const queryString = decodeURIComponent(document.getElementById("queryString").value)
-    if(columnRegex.test(document.getElementById("queryTerm").value) || columnRegex.test(queryString)) {
-       document.getElementById("batchrows").style.visibility = "visible" 
-    } else {
-       document.getElementById("batchrows").style.visibility = "hidden"
+    const isBatch = columnRegex.test(document.getElementById("queryTerm").value) || columnRegex.test(queryString)
+    var batchFields = document.getElementsByClassName("batch")
+    for(var i = 0; i < batchFields.length; i++) {
+       batchFields[i].style.visibility = isBatch ? "visible" : "hidden" 
     }
-
 }

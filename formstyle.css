@@ -15,7 +15,7 @@ div {
     min-width: 100%; 
 }
 
-#batchrows {
+.batch {
     visibility: hidden;
 }
 

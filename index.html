@@ -26,7 +26,7 @@
           </div>
           <div>
             <label for="q">Query:</label>
-            <span class='plugin-only' id="batchrows">rows 
+            <span class='plugin-only batch' id="batchrows">rows 
               <input class="rownum" title="startrow" id="startrow" type="number" min=1 step=1 value="1"/>
               to
               <input class="rownum" title="endrow" id="endrow" type="number" min=1 step=1 value="1"/>
@@ -87,11 +87,22 @@
               value="100,245"
             />
           </div> 
+          <div class='plugin-only batch'>
+            <label for='resultColumn'>Leftmost result column:</label>
+            <input 
+              title="Leftmost result Column"
+              type="text"
+              id="resultColumn"
+              name="resultColumn"
+              size="5"
+              value="A"
+            />
+          </div> 
           <div class='plugin-only'>
             <label for='maxRecs'>Maximum records:</label>
             <input 
               title="Maximum Records"
-              type="text"
+              type="number"
               id="maxRecs"
               name="maxRecs"
               size="10"
