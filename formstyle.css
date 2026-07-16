@@ -8,7 +8,7 @@ div {
 }
 
 .scroll-container {
-    overflow-x: scroll;
+    overflow-x: auto;
 }
 
 #searchTerms {        
