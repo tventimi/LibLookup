@@ -26,7 +26,13 @@
           </div>
           <div>
             <label for="q">Query:</label>
-          </div><div>
+            <span class='plugin-only' id="batchrows">rows 
+              <input class="rownum" title="startrow" id="startrow" type="number" min=1 step=1 value="1"/>
+              to
+              <input class="rownum" title="endrow" id="endrow" type="number" min=1 step=1 value="1"/>
+            </span>
+          </div>
+          <div>
             <select title="operator"  id="operator" disabled>
               <option value="and">AND</option>
               <option value="or">OR</option>
@@ -64,7 +70,6 @@
             <button type="button" id="addTermButton" disabled>Add</button>
             <button type="button" id="deleteTermButton" disabled>Delete</button>
             <button type="button" id="clearTermsButton" disabled>Clear</button>
-            <button type="button" id="insertSelectionButton" class="plugin-only">Selected Cells</button>
           </div> 
           <div class="scroll-container">
             <select title="searchTerms" id="searchTerms" size="3"></select>

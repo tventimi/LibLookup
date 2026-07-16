@@ -14,3 +14,11 @@ div {
 #searchTerms {        
     min-width: 100%; 
 }
+
+#batchrows {
+    visibility: hidden;
+}
+
+.rownum {
+    width: 50px;
+}

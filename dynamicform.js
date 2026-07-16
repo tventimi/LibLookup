@@ -5,20 +5,15 @@ queryTerm.addEventListener("keydown", function(event) {
         addTerm();
     }
 });
+
 queryTerm.addEventListener("input", function(event) {
     if(queryTerm.value.length > 0) {
         document.getElementById("addTermButton").disabled = false
     } else {
         document.getElementById("addTermButton").disabled = true
     }
+    updateBatchMode()
 });
-
-var insertSelectionButton = document.getElementById("insertSelectionButton")
-if(insertSelectionButton) {
-    insertSelectionButton.addEventListener("click", function() {
-        document.getElementById("addTermButton").disabled = false
-    })
-}
 
 document.getElementById("submit").addEventListener("click", function(event) {   
     if(document.getElementById("searchTerms").length == 0) {
@@ -74,6 +69,7 @@ function deleteTerm() {
         document.getElementById("clearTermsButton").disabled = true;
     }
     updateQueryString()
+    updateBatchMode()
 }
 
 document.getElementById("clearTermsButton").addEventListener("click", clearTerms);
@@ -81,11 +77,23 @@ function clearTerms() {
     document.getElementById("searchTerms").innerHTML = '';
     document.getElementById("deleteTermButton").disabled = true;
     document.getElementById("clearTermsButton").disabled = true;
+    updateQueryString()
+    updateBatchMode()
 }
-
 
 function updateQueryString() {
     var options = Array.from(document.getElementById("searchTerms").options)
     var queryString = options.map(option => option.value).join(" ")
     document.getElementById("queryString").value = queryString; 
+}
+
+function updateBatchMode() {
+    const columnRegex = /\[\[[A-Z]+\]\]/
+    const queryString = decodeURIComponent(document.getElementById("queryString").value)
+    if(columnRegex.test(document.getElementById("queryTerm").value) || columnRegex.test(queryString)) {
+       document.getElementById("batchrows").style.visibility = "visible" 
+    } else {
+       document.getElementById("batchrows").style.visibility = "hidden"
+    }
+
 }
