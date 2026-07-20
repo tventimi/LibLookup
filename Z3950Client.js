@@ -220,9 +220,7 @@ function createSearchRequest(database, rsid, queryString) {
     var bib1object = new asn1js.ObjectIdentifier({value: BIB1_OBJID})
 
     var zQuery = new Z3950Query(queryString)   
-    if(zQuery.type == "empty") {
-        return null
-    }
+    
     console.log(JSON.stringify(zQuery,null,2))
 
     var req = createASN1object({id: 22, value: [
