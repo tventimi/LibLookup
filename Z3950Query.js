@@ -36,11 +36,38 @@ export class Z3950Query {
                 this.operator = operators[operator]
                 this.leftOperand = new Z3950Query(queryTokens.slice(0,3).join(" "))
                 this.rightOperand =  new Z3950Query(queryTokens.slice(4).join(" "))
-                this.queryString = this.leftOperand.queryString + " " + queryTokens[i+3] + " " + this.rightOperand.queryString
+                if(this.leftOperand.type != "empty" && this.rightOperand.type != "empty") {
+                    this.queryString = this.leftOperand.queryString + " " + queryTokens[i+3] + " " + this.rightOperand.queryString
+                } else if(this.leftOperand.type == "empty" && this.rightOperand.type == "empty") {
+                    this.type = "operand"
+                    this.term = ""
+                    this.leftOperand = null
+                    this.rightOperand = null  
+                    this.attributes = []
+                    this.queryString = ""
+                } else { //one empty term
+                    var singleOperand = (this.leftOperand.type != "empty") ? this.leftOperand : this.rightOperand
+                    this.type = singleOperand.type
+                    this.queryString = singleOperand.queryString
+                    if(this.type == 'operand') {
+                        this.attributes = singleOperand.attributes
+                        this.term = singleOperand.term  
+                        this.leftOperand = null
+                        this.rightOperand = null                  
+                    } else {
+                        this.operator = singleOperand.operator
+                        this.leftOperand = singleOperand.leftOperand
+                        this.rightOperand = singleOperand.rightOperand
+                    }
+                }
                 return
             } else {
+                searchTerm = searchTerm.replace(/^\"/, '').replace(/\"$/, '')                
+                if(searchTerm == '') {
+                    this.type = "empty"
+                    return
+                }
                 this.type = "operand"
-                searchTerm = searchTerm.replace(/^\"/, '').replace(/\"$/, '')
                 if(index == "z3950") {
                     var zQuery = new Z3950Query(searchTerm,true)
                     this.type = zQuery.type
