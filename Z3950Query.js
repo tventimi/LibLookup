@@ -1,4 +1,9 @@
-const operators = {'and': 0, 'or': 1, 'andnot': 2}
+const operators = {
+    'and': 0, 
+    'or': 1, 
+    'andnot': 2
+}
+
 const indexes = {
     'keyword': 1016,
     'title': 4,

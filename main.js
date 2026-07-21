@@ -186,6 +186,7 @@ const createWindow = () => {
                       nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
                       navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
                     }
+                    outputDoc('#resultsPanel').removeClass('initiallyHidden')
                     outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
                     outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
                   }
