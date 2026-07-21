@@ -174,6 +174,7 @@ const createWindow = () => {
                   serverReady = true
                 } else {              
                   if(!Array.isArray(results)) {
+                    outputDoc('#resultsPanel').removeClass('initiallyHidden')
                     outputDoc('#results').append(renderMARC(results))
                   } else {
                     var navbar = outputDoc("#navigation")
