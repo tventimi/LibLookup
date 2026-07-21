@@ -82,6 +82,7 @@ const createWindow = () => {
             return;
           } 
 
+          response.writeHead(200, headers);
           var url = new URL(request.url, `http://${request.headers.host}`)
           var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
           filename = app.isPackaged ? path.join(app.getAppPath(),filename) :  filename
@@ -99,7 +100,7 @@ const createWindow = () => {
               response.end(data)
               return
             }
-            response.writeHead(200, headers);
+            
             var outputDoc = cheerio.load(data.toString())
             var catalog = url.searchParams.get('catalog')
             var query = decodeURIComponent(url.searchParams.get('q'))
@@ -110,7 +111,7 @@ const createWindow = () => {
             startAtRecord = +(url.searchParams.get('start') || 1)
             var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
             resultsPerPage = Math.min(maxRecs,defaultPageSize)
-
+            
             if(submittedDisplayFields) {
               displayFields = submittedDisplayFields.split(',').map(f => f.trim())
             }
@@ -161,7 +162,7 @@ const createWindow = () => {
                   if(format == 'html') {
                     response.end(outputDoc.html())
                   } else {
-                    response.end(outputDoc('#results').text())                 
+                    response.end(outputDoc('#results').text().replace(/^\s*/s,''))                 
                   }
                   serverReady = true
                 } else if(results.count == 0) {
@@ -330,6 +331,7 @@ function renderRecords(records,format = 'html') {
     }
     rendered += "</table>"
   }
+
   return rendered
 }
 
