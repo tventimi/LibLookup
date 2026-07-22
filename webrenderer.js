@@ -2,6 +2,7 @@ const urlParams = new URLSearchParams(window.location.search)
 var catalog = ""
 var query = ""
 var displayFields = ""
+var abort = false
 
 urlParams.forEach((value, key) => {
     if(key === "catalog") {
@@ -51,10 +52,20 @@ document.getElementById("downloadCSV").addEventListener('click', () => {
     download('csv')
 })
 
+document.getElementById("abortButton").addEventListener('click', () => {
+    abort = true
+})
+
+
 function download(format) {
     var origin = window.location.origin
     var queryString = window.location.search
+    var downloadStatus = document.getElementById('downloadStatus')
+    document.getElementById("abortButton").disabled = false    
+    downloadStatus.innerHTML = ""
+    abort = false
     queryString = queryString.replace(/&start=[0-9]+/,'')
+    queryString = queryString.replace(/&maxRecs=[0-9]+/,'')
     var resultCount = document.getElementById("resultCount").innerHTML
     resultCount = resultCount.replace(/.*of ([0-9]+).*/,'$1')
     var queryBatch = []
@@ -63,7 +74,7 @@ function download(format) {
         var maxRecs = (i+increment <= resultCount) ? increment : ((resultCount - i + 1))
         queryBatch.push(`${origin}/${queryString}&start=${i}&maxRecs=${maxRecs}&format=${format}`)
     }
-    var downloadStatus = document.getElementById('downloadStatus')
+    
     var readyForNext = true
     var qi = 0
 
@@ -73,21 +84,28 @@ function download(format) {
         if(!readyForNext) {
             return
         }
-        if(qi == queryBatch.length) {
-            downloadStatus.innerHTML = "Done!"
+        if(qi == queryBatch.length || abort) {
+            downloadStatus.innerHTML = abort ? "Aborted" : "Done!"
+            document.getElementById("abortButton").disabled = true
             clearInterval(queryInterval)
-            const contentType = (format == 'csv') ? 'application/csv' : 'application/mrc'
-            console.log(allRecords)
-            const fileBlob = new Blob([allRecords.join("\n")])
+            if(abort) {
+                return
+            }
+            const contentType = (format == 'csv') ? 'text/csv; charset=utf-8' : 'application/mrc'
+            const recSeparator = (format == 'csv') ? "\n" : "\x1D"
+            const fileBlob = new Blob([
+                ((format == 'csv') ? "\uFEFF" : '') + 
+                allRecords.join(recSeparator) + 
+                ((format == 'mrc') ? recSeparator : '')
+            ])
             const blobUrl = URL.createObjectURL(fileBlob);
-  
             const link = document.createElement('a');
             link.style.display = 'none';
             link.href = blobUrl;
             link.download = "LibLookupResults." + format;
             link.click();
   
-            document.removeChild(link);
+            link.remove()
             URL.revokeObjectURL(blobUrl);
             return
         }
@@ -98,12 +116,20 @@ function download(format) {
                 var completeCount = Math.min(qi*increment,resultCount)
                 downloadStatus.innerHTML = `Downloaded ${completeCount} of ${resultCount} records`
                 readyForNext = true
-                var recs = resp.split('\n').map(rec => rec.replace(/^[0-9 ]+,/,''))
-                if(qi > 1) {
-                    recs.shift()
-                }
-                if(recs[recs.length-1] == "") {
-                    recs.pop()
+                var recs = []
+                if(format == 'csv') {
+                    var recs = resp.split('\n').map(rec => rec.replace(/^[0-9 ]+,/,''))
+                    if(qi > 1) {
+                        recs.shift()
+                    }
+                    if(recs[recs.length-1] == "") {
+                        recs.pop()
+                    }
+                } else { //mrc
+                    recs = resp.split("\x1D")
+                    if(recs[recs.length-1] == "") {
+                        recs.pop()
+                    }
                 }
                 allRecords.push(...recs)
             })

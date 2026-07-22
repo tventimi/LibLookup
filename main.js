@@ -83,7 +83,7 @@ const createWindow = () => {
           } 
 
           response.writeHead(200, headers);
-          var url = new URL(request.url, `http://${request.headers.host}`)
+          var url = new URL(request.url, `https://${request.headers.host}`)
           var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
           filename = app.isPackaged ? path.join(app.getAppPath(),filename) :  filename
           console.log(`Received request for ${filename}`) 
@@ -105,8 +105,8 @@ const createWindow = () => {
             var catalog = url.searchParams.get('catalog')
             var query = decodeURIComponent(url.searchParams.get('q'))
             var singleRecord = (url.searchParams.get('singleRecord') == 'true')
-            var submittedDisplayFields = url.searchParams.get('displayFields')
             var format = url.searchParams.get('format') || 'html'
+            var submittedDisplayFields = url.searchParams.get('displayFields')            
             var pageType = url.searchParams.get('pageType') || 'web' 
             startAtRecord = +(url.searchParams.get('start') || 1)
             var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
@@ -114,7 +114,8 @@ const createWindow = () => {
             
             if(submittedDisplayFields) {
               displayFields = submittedDisplayFields.split(',').map(f => f.trim())
-            }
+            } 
+  
             if(format == 'html') { 
               if(filename.endsWith('index.html')) {      
                 var catalogHTML = "" 
@@ -165,16 +166,17 @@ const createWindow = () => {
                     response.end(outputDoc('#results').text().replace(/^\s*/s,''))                 
                   }
                   serverReady = true
-                } else if(results.count == 0) {
+                } else if(results.length == 0) {
                   if(format == 'html') {
-                    response.end("No results found")
-                  } else {
-                    response.end()
-                  }
+                    outputDoc('#resultsPanel').removeClass('hidden')
+                    outputDoc('.downloadButton').addClass('hidden')
+                    outputDoc("#results").append("No results found")
+                  } 
                   serverReady = true
                 } else {              
-                  if(!Array.isArray(results)) {
-                    outputDoc('#resultsPanel').removeClass('initiallyHidden')
+                  outputDoc('#resultsPanel').removeClass('hidden')
+                  if(!Array.isArray(results)) {   
+                    outputDoc('#downloadCSV').addClass('hidden')                 
                     outputDoc('#results').append(renderMARC(results))
                   } else {
                     var navbar = outputDoc("#navigation")
@@ -188,9 +190,18 @@ const createWindow = () => {
                       nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
                       navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
                     }
-                    outputDoc('#resultsPanel').removeClass('initiallyHidden')
                     outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
-                    outputDoc('#results').append(renderRecords([['001',...displayFields],...results],format))
+                    if(format == "mrc") {
+                      var rawMRC = results.map((rec) => {
+                        return escapeHtml(rec.as('iso2709'))
+                      })
+                      outputDoc('#results').append(rawMRC)
+                    } else {
+                      var resultsTable = results.map(rec => {
+                        return filterRecordFields(rec,['001',...displayFields])
+                      })
+                      outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))
+                    }
                   }
                 }
               }                
@@ -251,7 +262,9 @@ function z3950callback(respType, respBody) {
         resultsStream.next(null)
       } else {
         var marcRecords = respBody.split("\x1D")
-        marcRecords.pop()        
+        if(marcRecords[marcRecords.length-1] == "") {
+          marcRecords.pop()       
+        } 
         for(var i = 0; i < marcRecords.length; i++) {
           var rec = Marc.parse(Buffer.from(marcRecords[i],'binary'),'iso2709')                    
           latestResults.push(rec)
@@ -259,7 +272,7 @@ function z3950callback(respType, respBody) {
         }         
         if(latestResults.length == expectedResultCount) {          
           resultsStream.next(displayResults.map((rec) => {
-            return filterRecordFields(rec,['001',...displayFields])
+            return rec
           })) 
           resultsStream.next(null)       
         } else {
@@ -317,13 +330,14 @@ function renderRecords(records,format = 'html') {
     if(startAtRecord + resultsPerPage < latestResultCount) {
       recordsAndCount.nextRecordPosition = startAtRecord + resultsPerPage
     }    
-    rendered += JSON.stringify(recordsAndCount)
+    rendered += escapeHtml(JSON.stringify(recordsAndCount))
   } else if(format == 'csv') {
-    rendered += csv.stringify(records)
+    rendered += escapeHtml(csv.stringify(records))
   } else if (format == 'html') {
     rendered += "<table class='marc'><th></th>"
     rendered += "<th>" + records[0].slice(1).join("</th><th>") + "</th>"
     for(var i = 1; i < records.length; i++) {
+      records[i] = records[i].map(rec => escapeHtml(rec))
       rendered += "<tr>"
       rendered += `<td><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
             `&q=recno+%3D+${records[i][0]}&displayFields=${displayFields}'>View</a></td>`
@@ -356,7 +370,7 @@ function renderMARC(marc) {
       if(sf.length == 1) {
         rec += "$" 
       }   
-      rec += sf + " "
+      rec += escapeHtml(sf) + " "
     }
     rec += "</td></tr>"
   })          
@@ -406,6 +420,18 @@ function z3950search(resultSetID, query) {
       }
     },1000)
   }
+}
+
+function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  
+  return text.toString().replace(/[&<>"']/g, (m) => map[m]);
 }
 
 app.on('activate', () => {

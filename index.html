@@ -117,11 +117,12 @@
           <script src ="./dynamicform.js" type="application/javascript"></script>
         </form>
       </div>
-      <div id="resultsPanel" class="initiallyHidden">
+      <div id="resultsPanel" class="hidden">
         <div id='resultCount'></div>
         <div id='download'>
-          <button id='downloadCSV'>Download CSV</button>
-          <button id='downloadMRC'>Download MRC</button>
+          <button class="downloadButton" id="downloadMRC">Download MRC</button>
+          <button class="downloadButton" id="downloadCSV">Download CSV</button>
+          <button class="downloadButton" id="abortButton" disabled>Abort</button>
           <span id='downloadStatus'></span>
         </div>
         <div id='navigation'></div>

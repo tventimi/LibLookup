@@ -30,6 +30,6 @@ body {
     margin-left: 250px;
 }
 
-.initiallyHidden {
+.hidden {
     visibility: hidden
 }
