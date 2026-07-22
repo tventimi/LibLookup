@@ -171,7 +171,9 @@ const createWindow = () => {
                     outputDoc('#resultsPanel').removeClass('hidden')
                     outputDoc('.downloadButton').addClass('hidden')
                     outputDoc("#results").append("No results found")
-                  } 
+                  } else {
+                    outputDoc("#results").append(renderRecords([['001',...displayFields]],format))
+                  }
                   serverReady = true
                 } else {              
                   outputDoc('#resultsPanel').removeClass('hidden')
