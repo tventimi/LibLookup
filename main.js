@@ -207,7 +207,7 @@ const createWindow = () => {
                     var resultsTable = results.map(rec => {
                       return filterRecordFields(rec,['001',...displayFields])
                     })
-                    outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))
+                    outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))                    
                   }
                 }
               }                
@@ -295,29 +295,40 @@ function filterRecordFields(marc, fields = []) {
     for(var i = 0; i < fields.length; i++) {
       var tag = fields[i].substring(0,3).replaceAll('x','.')
       var sf = fields[i].substring(3)  || "" 
-      var fi = marc.get(new RegExp(`^${tag}`))[0]
+      var fields_i = marc.get(new RegExp(`^${tag}`))
       var val = ""
-      if(fi) {
+      if(fields_i.length > 0) {
         if(tag.startsWith("00")) {      
-          val = fi.value
+          val = fields_i[0].value
         } else {
-          var selectedSubfields = fi.subf
+          var selectedSubfields = fields_i.map(field => field.subf)
           if(sf.includes("=")) {
             var selected880s = marc.get('880').filter((field) => 
               field.subf.filter((subfield) => 
                 subfield[0] == '6' && subfield[1].startsWith(tag)
               ).length > 0
             )
-            selectedSubfields = selected880s.length > 0 ? selected880s[0].subf : []            
+            selectedSubfields = selected880s.length > 0 ? selected880s.map(field => field.subf) : []            
             sf = sf.replaceAll('=','')
           }
 
           if(sf != "") {
-            selectedSubfields = selectedSubfields.filter((subfield) => (sf.includes(subfield[0])))
+            selectedSubfields = selectedSubfields.map(
+              sflist => sflist.filter(
+                subfield => (sf.includes(subfield[0]))
+              )
+            )
           } else {
-            selectedSubfields = selectedSubfields.filter((subfield) => (!'0123456789'.includes(subfield[0])))
+            selectedSubfields = selectedSubfields.map(
+              sflist => sflist.filter(
+                subfield => (!'0123456789'.includes(subfield[0]))
+              )
+            )
           }
-          val = selectedSubfields.map((subfield) => subfield[1]).join(' ')
+          val = selectedSubfields.map(
+            sflist => sflist.map(
+              subfield => subfield[1]).join(' ')
+            ).join("\xA6")
         }
         if(tag == '001') {
           val = val.replace(/^[a-z]*/,"")
@@ -351,8 +362,8 @@ function renderRecords(records,format = 'html') {
       rendered += "</tr>"
     }
     rendered += "</table>"
+    rendered = rendered.replaceAll("\xA6","<br/>")
   }
-
   return rendered
 }
 
