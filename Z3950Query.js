@@ -68,6 +68,10 @@ export class Z3950Query {
                 return
             } else {
                 searchTerm = searchTerm.replace(/^\"/, '').replace(/\"$/, '')                
+                if(searchTerm == "") {
+                    this.type = "empty"
+                    return
+                }
                 this.type = "operand"
                 if(index == "z3950") {
                     var zQuery = new Z3950Query(searchTerm,true)
