@@ -67,6 +67,9 @@ function download(format) {
     queryString = queryString.replace(/&start=[0-9]+/,'')
     queryString = queryString.replace(/&maxRecs=[0-9]+/,'')
     var resultCount = document.getElementById("resultCount").innerHTML
+    if(queryString.match(/singleRecord=true/)) {
+        resultCount = "1"
+    }
     resultCount = resultCount.replace(/.*of ([0-9]+).*/,'$1')
     var queryBatch = []
     const increment = 50

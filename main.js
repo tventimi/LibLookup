@@ -178,32 +178,36 @@ const createWindow = () => {
                 } else {              
                   outputDoc('#resultsPanel').removeClass('hidden')
                   if(!Array.isArray(results)) {   
-                    outputDoc('#downloadCSV').addClass('hidden')                 
-                    outputDoc('#results').append(renderMARC(results))
-                  } else {
-                    var navbar = outputDoc("#navigation")
-                    if(startAtRecord > 1) {
-                      var prevURL = new URL(url)
-                      prevURL.searchParams.set('start',Math.max(startAtRecord - resultsPerPage,1))
-                      navbar.append(`<a href='index.html${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
-                    }
-                    if(startAtRecord + displayResults.length <= latestResultCount) {
-                      var nextURL = new URL(url)
-                      nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
-                      navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
-                    }
-                    outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
-                    if(format == "mrc") {
-                      var rawMRC = results.map((rec) => {
-                        return escapeHtml(rec.as('iso2709'))
-                      })
-                      outputDoc('#results').append(rawMRC)
+                    if(format == 'html') {
+                      outputDoc('#downloadCSV').addClass('hidden')                 
+                      outputDoc('#results').append(renderMARC(results))
+                      return
                     } else {
-                      var resultsTable = results.map(rec => {
-                        return filterRecordFields(rec,['001',...displayFields])
-                      })
-                      outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))
+                      results = [results]
                     }
+                  } 
+                  var navbar = outputDoc("#navigation")
+                  if(startAtRecord > 1) {
+                    var prevURL = new URL(url)
+                    prevURL.searchParams.set('start',Math.max(startAtRecord - resultsPerPage,1))
+                    navbar.append(`<a href='index.html${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
+                  }
+                  if(startAtRecord + displayResults.length <= latestResultCount) {
+                    var nextURL = new URL(url)
+                    nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
+                    navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
+                  }
+                  outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
+                  if(format == "mrc") {
+                    var rawMRC = results.map((rec) => {
+                      return escapeHtml(rec.as('iso2709'))
+                    })
+                    outputDoc('#results').append(rawMRC)
+                  } else {
+                    var resultsTable = results.map(rec => {
+                      return filterRecordFields(rec,['001',...displayFields])
+                    })
+                    outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))
                   }
                 }
               }                
