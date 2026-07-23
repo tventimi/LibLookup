@@ -24,6 +24,7 @@ const libLookupDomain = 'localhost'
 const libLookupPort = 3950
 const baseURL = `https://${libLookupDomain}:${libLookupPort}/`
 const defaultPageSize = 50
+const intervalLength = 100
 
 var resultsPerPage = defaultPageSize
 var latestQuery = ""
@@ -71,166 +72,168 @@ const createWindow = () => {
     var serverReady = true
     requestStream.subscribe((reqResp) => {
       var requestInterval = setInterval(() => {
-        if(serverReady == true) {
-          serverReady = false
-          var request = reqResp.req
-          var response = reqResp.resp
-          if (request.method === 'OPTIONS') {
-            response.writeHead(204, headers);
-            response.end();
+        console.log("req")
+        if(!serverReady) {
+          return
+        }
+        serverReady = false
+        var request = reqResp.req
+        var response = reqResp.resp
+        if (request.method === 'OPTIONS') {
+          response.writeHead(204, headers);
+          response.end();
+          serverReady = true
+          return;
+        } 
+
+        response.writeHead(200, headers);
+        var url = new URL(request.url, `https://${request.headers.host}`)
+        var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
+        filename = app.isPackaged ? path.join(app.getAppPath(),filename) :  filename
+        console.log(`Received request for ${filename}`) 
+        fs.readFile(filename, (err, data) => {  
+          if (err) {
+            response.writeHead(404);
+            response.end('404 Not Found');
             serverReady = true
             return;
           } 
-
-          response.writeHead(200, headers);
-          var url = new URL(request.url, `https://${request.headers.host}`)
-          var filename = url.pathname.replace(/^\/+/, '') || 'index.html'
-          filename = app.isPackaged ? path.join(app.getAppPath(),filename) :  filename
-          console.log(`Received request for ${filename}`) 
-          fs.readFile(filename, (err, data) => {  
-            if (err) {
-              response.writeHead(404);
-              response.end('404 Not Found');
-              serverReady = true
-              return;
-            } 
-            if(filename.endsWith('png')) {
-              headers['Content-Type'] = 'image/png'
-              response.writeHead(200, headers);
-              response.end(data)
-              return
-            }
-            
-            var outputDoc = cheerio.load(data.toString())
-            var catalog = url.searchParams.get('catalog')
-            var query = decodeURIComponent(url.searchParams.get('q'))
-            var singleRecord = (url.searchParams.get('singleRecord') == 'true')
-            var format = url.searchParams.get('format') || 'html'
-            var submittedDisplayFields = url.searchParams.get('displayFields')            
-            var pageType = url.searchParams.get('pageType') || 'web' 
-            startAtRecord = +(url.searchParams.get('start') || 1)
-            var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
-            resultsPerPage = Math.min(maxRecs,defaultPageSize)
-            
-            if(submittedDisplayFields) {
-              displayFields = submittedDisplayFields.split(',').map(f => f.trim())
-            } 
+          if(filename.endsWith('png')) {
+            headers['Content-Type'] = 'image/png'
+            response.writeHead(200, headers);
+            response.end(data)
+            return
+          }
+          
+          var outputDoc = cheerio.load(data.toString())
+          var catalog = url.searchParams.get('catalog')
+          var query = decodeURIComponent(url.searchParams.get('q'))
+          var singleRecord = (url.searchParams.get('singleRecord') == 'true')
+          var format = url.searchParams.get('format') || 'html'
+          var submittedDisplayFields = url.searchParams.get('displayFields')            
+          var pageType = url.searchParams.get('pageType') || 'web' 
+          startAtRecord = +(url.searchParams.get('start') || 1)
+          var maxRecs = +(url.searchParams.get('maxRecs') || defaultPageSize)
+          resultsPerPage = Math.min(maxRecs,defaultPageSize)
+          
+          if(submittedDisplayFields) {
+            displayFields = submittedDisplayFields.split(',').map(f => f.trim())
+          } 
   
-            if(format == 'html') { 
-              if(filename.endsWith('index.html')) {      
-                var catalogHTML = "" 
-                var catalogList = outputDoc('#catalog')
-                Object.keys(catalogs).forEach((cat) => {
-                  const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
-                  catalogList.append(catOption)
-                })
-                if(pageType != "plugin") {
-                  outputDoc('.plugin-only').remove()
-                }             
-              }              
-            }
-            if(!filename.endsWith('.html')) {
-              response.end(outputDoc.text())
-              serverReady = true
-              return
-            }
-            if(!(catalog && query)) {   
-              if(pageType == 'plugin') {                     
-                outputDoc('*').each((index, element) => {
-                  if(outputDoc(element).attr('href')) {
-                    var newLink = outputDoc(element).attr('href').replaceAll('./',baseURL)
-                    outputDoc(element).attr('href',newLink)
-                  }
-                  if(outputDoc(element).attr('src')) {
-                    var newSrc = outputDoc(element).attr('src').replaceAll('./',baseURL)
-                    outputDoc(element).attr('src',newSrc)
-                  }
-                })           
-                var formHTML = outputDoc('#queryForm').html()
-                response.end(`<form id="queryForm">${formHTML}</form>`) 
-              } else {
-                outputDoc('.plugin-only').remove()
-                response.end(outputDoc.html())
-              }
-              serverReady = true
-              return
-            }
-
-            resultSetID = "1"
-            resultsStream.subscribe(
-              results => {
-                if(results == null) {
-                  if(format == 'html') {
-                    response.end(outputDoc.html())
-                  } else {
-                    response.end(outputDoc('#results').text().replace(/^\s*/s,''))                 
-                  }
-                  serverReady = true
-                } else if(results.length == 0) {
-                  if(format == 'html') {
-                    outputDoc('#resultsPanel').removeClass('hidden')
-                    outputDoc('.downloadButton').addClass('hidden')
-                    outputDoc("#results").append("No results found")
-                  } else {
-                    outputDoc("#results").append(renderRecords([['001',...displayFields]],format))
-                  }
-                  serverReady = true
-                } else {              
-                  outputDoc('#resultsPanel').removeClass('hidden')
-                  if(!Array.isArray(results)) {   
-                    if(format == 'html') {
-                      outputDoc('#downloadCSV').addClass('hidden')                 
-                      outputDoc('#results').append(renderMARC(results))
-                      return
-                    } else {
-                      results = [results]
-                    }
-                  } 
-                  var navbar = outputDoc("#navigation")
-                  if(startAtRecord > 1) {
-                    var prevURL = new URL(url)
-                    prevURL.searchParams.set('start',Math.max(startAtRecord - resultsPerPage,1))
-                    navbar.append(`<a href='index.html${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
-                  }
-                  if(startAtRecord + displayResults.length <= latestResultCount) {
-                    var nextURL = new URL(url)
-                    nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
-                    navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
-                  }
-                  outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
-                  if(format == "mrc") {
-                    var rawMRC = results.map((rec) => {
-                      return escapeHtml(rec.as('iso2709'))
-                    })
-                    outputDoc('#results').append(rawMRC)
-                  } else {
-                    var resultsTable = results.map(rec => {
-                      return filterRecordFields(rec,['001',...displayFields])
-                    })
-                    outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))                    
-                  }
-                }
-              }                
-            )
-            if(singleRecord && displayResults.length > 0) {
-              displayResults = latestResults.filter((rec) => {
-                return rec.get('001')[0].value.includes(decodeURIComponent(query)
-                  .replace(/.*recno = ([0-9]*).*/,"$1"))
+          if(format == 'html') { 
+            if(filename.endsWith('index.html')) {      
+              var catalogHTML = "" 
+              var catalogList = outputDoc('#catalog')
+              Object.keys(catalogs).forEach((cat) => {
+                const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
+                catalogList.append(catOption)
               })
-              resultsStream.next(displayResults[0])
-              resultsStream.next(null)
+              if(pageType != "plugin") {
+                outputDoc('.plugin-only').remove()
+              }             
+            }              
+          }
+          if(!filename.endsWith('.html')) {
+            response.end(outputDoc.text())
+            serverReady = true
+            return
+          }
+          if(!(catalog && query)) {   
+            if(pageType == 'plugin') {                     
+              outputDoc('*').each((index, element) => {
+                if(outputDoc(element).attr('href')) {
+                  var newLink = outputDoc(element).attr('href').replaceAll('./',baseURL)
+                  outputDoc(element).attr('href',newLink)
+                }
+                if(outputDoc(element).attr('src')) {
+                  var newSrc = outputDoc(element).attr('src').replaceAll('./',baseURL)
+                  outputDoc(element).attr('src',newSrc)
+                }
+              })           
+              var formHTML = outputDoc('#queryForm').html()
+              response.end(`<form id="queryForm">${formHTML}</form>`) 
             } else {
-              if(catalog != catalogID) {
-                catalogID = catalog
-                latestQuery = ""
-                z3950Connect(catalogID)
-              } 
-              z3950search(resultSetID, query)         
-            }      
-          })
-          clearInterval(requestInterval)
-        }
-      },100) 
+              outputDoc('.plugin-only').remove()
+              response.end(outputDoc.html())
+            }
+            serverReady = true
+            return
+          }
+
+          resultSetID = "1"
+          resultsStream.subscribe(
+            results => {
+              if(results == null) {
+                if(format == 'html') {
+                  response.end(outputDoc.html())
+                } else {
+                  response.end(outputDoc('#results').text().replace(/^\s*/s,''))                 
+                }
+                serverReady = true
+              } else if(results.length == 0) {
+                if(format == 'html') {
+                  outputDoc('#resultsPanel').removeClass('hidden')
+                  outputDoc('.downloadButton').addClass('hidden')
+                  outputDoc("#results").append("No results found")
+                } else {
+                  outputDoc("#results").append(renderRecords([['001',...displayFields]],format))
+                }
+                serverReady = true
+              } else {              
+                outputDoc('#resultsPanel').removeClass('hidden')
+                if(!Array.isArray(results)) {   
+                  if(format == 'html') {
+                    outputDoc('#downloadCSV').addClass('hidden')                 
+                    outputDoc('#results').append(renderMARC(results))
+                    return
+                  } else {
+                    results = [results]
+                  }
+                } 
+                var navbar = outputDoc("#navigation")
+                if(startAtRecord > 1) {
+                  var prevURL = new URL(url)
+                  prevURL.searchParams.set('start',Math.max(startAtRecord - resultsPerPage,1))
+                  navbar.append(`<a href='index.html${prevURL.search}'>Previous ${resultsPerPage}</a>&nbsp;&nbsp;`)
+                }
+                if(startAtRecord + displayResults.length <= latestResultCount) {
+                  var nextURL = new URL(url)
+                  nextURL.searchParams.set('start',startAtRecord + resultsPerPage)
+                  navbar.append(`<a href='index.html${nextURL.search}'>Next ${resultsPerPage}</a>`)
+                }
+                outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
+                if(format == "mrc") {
+                  var rawMRC = results.map((rec) => {
+                    return escapeHtml(rec.as('iso2709'))
+                  })
+                  outputDoc('#results').append(rawMRC)
+                } else {
+                  var resultsTable = results.map(rec => {
+                    return filterRecordFields(rec,['001',...displayFields])
+                  })
+                  outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))                    
+                }
+              }
+            }                
+          )
+          if(singleRecord && displayResults.length > 0) {
+            displayResults = latestResults.filter((rec) => {
+              return rec.get('001')[0].value.includes(decodeURIComponent(query)
+                .replace(/.*recno = ([0-9]*).*/,"$1"))
+            })
+            resultsStream.next(displayResults[0])
+            resultsStream.next(null)
+          } else {
+            if(catalog != catalogID || !z3950client?.isConnected()) {
+              catalogID = catalog
+              latestQuery = ""
+              z3950Connect(catalogID)
+            } 
+            z3950search(resultSetID, query)         
+          }      
+        })
+        clearInterval(requestInterval)
+      },intervalLength) 
     })
 
     const server = https.createServer(serverOptions, (request, response) => { 
