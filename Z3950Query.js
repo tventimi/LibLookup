@@ -147,7 +147,7 @@ export class Z3950Query {
 
     // Simple tokenizer to split by whitespace but preserve quoted strings
     tokenize(str) {
-        const regex = /@\w+|@attr \d+=\d+|"[^"]+"|[^\s]+/g;
+        const regex = /@\w+|@attr \d+=\d+|"([^"\\]|\\.)+"|[^\s]+/g;
         let matches = [];
         let match;
         while ((match = regex.exec(str)) !== null) {

@@ -35,7 +35,7 @@ if(catalog && query) {
 }     
 
 function tokenize(str) {
-    const regex = /"[^"]+"|[^\s]+/g;
+    const regex = /"([^"\\]|\\.)+"|[^\s]+/g;
     let matches = [];
     let match;
     while ((match = regex.exec(str)) !== null) {
