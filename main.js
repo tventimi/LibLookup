@@ -260,7 +260,12 @@ function z3950callback(respType, respBody) {
       latestResults = []
       displayResults = []
       expectedResultCount = Math.min(resultCount-startAtRecord+1,resultsPerPage)
-      z3950client.getRecords(resultSetID, startAtRecord, expectedResultCount)
+      if(expectedResultCount > 0) {
+        z3950client.getRecords(resultSetID, startAtRecord, expectedResultCount)
+      } else {
+        resultsStream.next([])
+        resultsStream.next(null)
+      }
       break;
     case 'presentResponse':
       if(respBody == "") {
@@ -416,7 +421,12 @@ function callSearchOrCache(resultSetID, query) {
   if(latestQuery == query && z3950client.isConnected()) {
     console.log('cache')
     expectedResultCount = Math.min(resultsPerPage,latestResultCount-startAtRecord+1)
-    z3950client.getRecords(resultSetID,startAtRecord,expectedResultCount)
+    if(expectedResultCount > 0) {
+      z3950client.getRecords(resultSetID,startAtRecord,expectedResultCount)
+    } else {
+      resultsStream.next([])
+      resultsStream.next(null)     
+    }
   } else {
     console.log('search')
     z3950client.query(resultSetID, query)
