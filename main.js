@@ -181,10 +181,10 @@ const createWindow = () => {
                 serverReady = true
               } else {              
                 outputDoc('#resultsPanel').removeClass('hidden')
-                if(!Array.isArray(results)) {   
+                if(singleRecord) {   
                   if(format == 'html') {
                     outputDoc('#downloadCSV').addClass('hidden')                 
-                    outputDoc('#results').append(renderMARC(results))
+                    outputDoc('#results').append(renderMARC(results[0]))
                     return
                   } else {
                     results = [results]
@@ -221,16 +221,18 @@ const createWindow = () => {
               return rec.get('001')[0].value.includes(decodeURIComponent(query)
                 .replace(/.*recno = ([0-9]*).*/,"$1"))
             })
-            resultsStream.next(displayResults[0])
-            resultsStream.next(null)
-          } else {
-            if(catalog != catalogID || !z3950client?.isConnected()) {
-              catalogID = catalog
-              latestQuery = ""
-              z3950Connect(catalogID)
-            } 
-            z3950search(resultSetID, query)         
-          }      
+            if(displayResults.length == 1) {
+              resultsStream.next([displayResults[0]])
+              resultsStream.next(null)
+              return
+            }
+          }
+          if(catalog != catalogID || !z3950client?.isConnected()) {
+            catalogID = catalog
+            latestQuery = ""
+            z3950Connect(catalogID)
+          } 
+          z3950search(resultSetID, query)               
         })
         clearInterval(requestInterval)
       },intervalLength) 
