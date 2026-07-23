@@ -72,7 +72,6 @@ const createWindow = () => {
     var serverReady = true
     requestStream.subscribe((reqResp) => {
       var requestInterval = setInterval(() => {
-        console.log("req")
         if(!serverReady) {
           return
         }
@@ -161,7 +160,7 @@ const createWindow = () => {
           }
 
           resultSetID = "1"
-          resultsStream.subscribe(
+          var resultsSubscription = resultsStream.subscribe(
             results => {
               if(results == null) {
                 if(format == 'html') {
@@ -170,6 +169,7 @@ const createWindow = () => {
                   response.end(outputDoc('#results').text().replace(/^\s*/s,''))                 
                 }
                 serverReady = true
+                resultsSubscription.unsubscribe()
               } else if(results.length == 0) {
                 if(format == 'html') {
                   outputDoc('#resultsPanel').removeClass('hidden')
