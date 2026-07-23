@@ -70,6 +70,7 @@ export class Z3950Query {
                 searchTerm = searchTerm.replace(/^\"/, '').replace(/\"$/, '')                
                 if(searchTerm == "") {
                     this.type = "empty"
+                    this.attributes = []
                     return
                 }
                 this.type = "operand"

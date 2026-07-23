@@ -193,7 +193,7 @@ function createCloseRequest() {
 function zQueryToASN1(zQuery) {
     var encoder = new TextEncoder()
     var asn1 = null
-    if(zQuery.type == "operand") {
+    if(zQuery.type == "operand" || zQuery.type == "empty") {
         asn1 = {id: 0, value: [ //operand
                     {id: 102, value: [ //attributes plus term
                         {id: 44, value: zQuery.attributes.map((attr) => (
