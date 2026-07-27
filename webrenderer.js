@@ -35,11 +35,12 @@ if(catalog && query) {
 }     
 
 function tokenize(str) {
+    str = str.replaceAll("\"\"","{quote}")
     const regex = /"([^"\\]|\\.)+"|[^\s]+/g;
     let matches = [];
     let match;
     while ((match = regex.exec(str)) !== null) {
-        matches.push(match[0]);
+        matches.push(match[0].replaceAll("{quote}","\""));
     }
     return matches;
 }

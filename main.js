@@ -219,7 +219,7 @@ const createWindow = () => {
           if(singleRecord && displayResults.length > 0) {
             displayResults = latestResults.filter((rec) => {
               return rec.get('001')[0].value.includes(decodeURIComponent(query)
-                .replace(/.*recno = ([0-9]*).*/,"$1"))
+                .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
             })
             if(displayResults.length == 1) {
               resultsStream.next([displayResults[0]])
@@ -364,7 +364,7 @@ function renderRecords(records,format = 'html') {
       records[i] = records[i].map(rec => escapeHtml(rec))
       rendered += "<tr>"
       rendered += `<td><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
-            `&q=recno+%3D+${records[i][0]}&displayFields=${displayFields}'>View</a></td>`
+            `&q=recno+%3D+%22${records[i][0]}%22&displayFields=${displayFields}'>View</a></td>`
       rendered += "<td>" + records[i].slice(1).join("</td><td>") + "</td>"
       rendered += "</tr>"
     }
@@ -433,12 +433,13 @@ function callSearchOrCache(resultSetID, query) {
     console.log('search')
     if(catalogs[catalogID].recnoIndex) {
       var recnoIndex = catalogs[catalogID].recnoIndex
-      var matches = query.match(/recno (\S+) (\S+)/)
+      var matches = query.match(/recno (\S+) ([^&]+)/)
       if(matches) {
         var recno = matches[2]
         if(catalogs[catalogID].recnoNumeric) {
           recno = recno.replaceAll(/[^0-9]/g,"")
         }
+        recno = "\"\"" + recno.replaceAll("\"","") + "\"\""
         query = `z3950 = "@attr 1=${recnoIndex} ${recno}"`
       }
     }
