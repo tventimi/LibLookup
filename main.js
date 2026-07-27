@@ -339,10 +339,7 @@ function filterRecordFields(marc, fields = []) {
             sflist => sflist.map(
               subfield => subfield[1]).join(' ')
             ).join("\xA6")
-        }
-        if(tag == '001') {
-          val = val.replace(/^[a-z]*/,"")
-        }
+        }        
       }
       filteredFields.push(val)
     }
@@ -434,6 +431,17 @@ function callSearchOrCache(resultSetID, query) {
     }
   } else {
     console.log('search')
+    if(catalogs[catalogID].recnoIndex) {
+      var recnoIndex = catalogs[catalogID].recnoIndex
+      var matches = query.match(/recno (\S+) (\S+)/)
+      if(matches) {
+        var recno = matches[2]
+        if(catalogs[catalogID].recnoNumeric) {
+          recno = recno.replaceAll(/[^0-9]/g,"")
+        }
+        query = `z3950 = "@attr 1=${recnoIndex} ${recno}"`
+      }
+    }
     z3950client.query(resultSetID, query)
   }
   latestQuery = query

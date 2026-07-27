@@ -6,7 +6,9 @@
     "database": "OLUCWorldCat",
     "username": "100062493",
     "password": "catalog",
-    "port": 210
+    "port": 210,
+    "recnoIndex": 12,
+    "recnoNumeric": true 
   },
   "OCLCAuthorities": {
     "name": "OCLC Authorities",
@@ -15,7 +17,9 @@
     "database": "OCLCAuthoritiesLC",
     "username": "100062493",
     "password": "catalog",
-    "port": 210
+    "port": 210,
+    "recnoIndex": 12,
+    "recnoNumeric": true 
   },
   "AlmaProd": {
     "name": "Alma Production",
@@ -36,20 +40,26 @@
     "type": "z3950",
     "host": "lx2.loc.gov",
     "database": "LCDB",
-    "port": 210
+    "port": 210,    
+    "recnoIndex": 1007,
+    "recnoNumeric": false 
   },
   "LCNAF": {
     "name": "LC Name Authority File",
     "type": "z3950",
     "host": "lx2.loc.gov",
     "database": "NAF",
-    "port": 210
+    "port": 210,
+    "recnoIndex": 1007,
+    "recnoNumeric": false
   },
   "LCSAF": {
     "name": "LC Subject Authority File",
     "type": "z3950",
     "host": "lx2.loc.gov",
     "database": "SAF",
-    "port": 210
+    "port": 210,
+    "recnoIndex": 1007,
+    "recnoNumeric": false
   }
 }
