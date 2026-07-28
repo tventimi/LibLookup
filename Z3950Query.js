@@ -24,7 +24,7 @@ export class Z3950Query {
     term = null
     queryString = ""
 
-    constructor(query, isRaw = false) {
+    constructor(query, details = null, isRaw = false) {
         var queryTokens = this.tokenize(query)        
         console.log(queryTokens)
         if(isRaw){
@@ -40,8 +40,8 @@ export class Z3950Query {
                 this.type = "operator"
                 var operator = queryTokens[i+3].toLowerCase().replace("not","andnot")
                 this.operator = operators[operator]
-                this.leftOperand = new Z3950Query(queryTokens.slice(0,3).join(" "))
-                this.rightOperand =  new Z3950Query(queryTokens.slice(4).join(" "))
+                this.leftOperand = new Z3950Query(queryTokens.slice(0,3).join(" "),details)
+                this.rightOperand =  new Z3950Query(queryTokens.slice(4).join(" "),details)
                 if(this.leftOperand.type != "empty" && this.rightOperand.type != "empty") {
                     this.queryString = this.leftOperand.queryString + " " + queryTokens[i+3] + " " + this.rightOperand.queryString
                 } else if(this.leftOperand.type == "empty" && this.rightOperand.type == "empty") {
@@ -76,7 +76,7 @@ export class Z3950Query {
                 }
                 this.type = "operand"
                 if(index == "z3950") {
-                    var zQuery = new Z3950Query(searchTerm,true)
+                    var zQuery = new Z3950Query(searchTerm,details,true)
                     this.type = zQuery.type
                     this.queryString = zQuery.queryString
                     if(zQuery.type == 'operand') {
@@ -88,11 +88,20 @@ export class Z3950Query {
                         this.rightOperand = zQuery.rightOperand
                     }
                 } else {
-                    this.attributes = [{type: 1, value: indexes[index]}]
+                    var useAttribute = indexes[index]
+                    if(index == "recno" && details?.recnoIndex) {
+                        useAttribute = details.recnoIndex
+                    }
+                    this.attributes = [{type: 1, value: useAttribute}]
                     if(relator == "==") {
                         this.attributes.push({type: 4, value: 1})
-                    } 
+                    } else if(details?.defaultStructure) {
+                        this.attributes.push({type: 4, value: details.defaultStructure})
+                    }
                     this.term = searchTerm
+                    if(index == "recno" && details?.recnoNumeric) {
+                        this.term = this.term.replaceAll(/[^0-9]/g,"")
+                    }
                     this.queryString = queryTokens.slice(0,3).join(" ")
                 }
                 break
@@ -113,10 +122,10 @@ export class Z3950Query {
                 } else {
                     this.type = "operator"
                     this.operator = operators[token.substring(1)]
-                    this.leftOperand = new Z3950Query(queryTokens.slice(i + 1).join(" "),true)
+                    this.leftOperand = new Z3950Query(queryTokens.slice(i + 1).join(" "),details,true)
                     this.queryString += " " + this.leftOperand.queryString
                     var lengthSoFar = this.queryString.length
-                    this.rightOperand =  new Z3950Query(query.substring(lengthSoFar),true)
+                    this.rightOperand =  new Z3950Query(query.substring(lengthSoFar),details,true)
                     this.queryString += " " + this.rightOperand.queryString
                     return
                 }

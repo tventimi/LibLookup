@@ -7,8 +7,11 @@
     "username": "100062493",
     "password": "catalog",
     "port": 210,
-    "recnoIndex": 12,
-    "recnoNumeric": true 
+    "details": {
+      "recnoIndex": 12,
+      "recnoNumeric": true,
+      "defaultStructure": 6
+    }
   },
   "OCLCAuthorities": {
     "name": "OCLC Authorities",
@@ -18,8 +21,11 @@
     "username": "100062493",
     "password": "catalog",
     "port": 210,
-    "recnoIndex": 12,
-    "recnoNumeric": true 
+    "details": {
+      "recnoIndex": 12,
+      "recnoNumeric": true, 
+      "defaultStructure": 6
+    }
   },
   "AlmaProd": {
     "name": "Alma Production",
@@ -41,8 +47,11 @@
     "host": "lx2.loc.gov",
     "database": "LCDB",
     "port": 210,    
-    "recnoIndex": 1007,
-    "recnoNumeric": false 
+    "details": {
+      "recnoIndex": 1007,
+      "recnoNumeric": false, 
+      "defaultStructure": 6
+    }
   },
   "LCNAF": {
     "name": "LC Name Authority File",
@@ -50,8 +59,11 @@
     "host": "lx2.loc.gov",
     "database": "NAF",
     "port": 210,
-    "recnoIndex": 1007,
-    "recnoNumeric": false
+    "details": {
+      "recnoIndex": 1007,
+      "recnoNumeric": false, 
+      "defaultStructure": 6
+    }
   },
   "LCSAF": {
     "name": "LC Subject Authority File",
@@ -59,7 +71,10 @@
     "host": "lx2.loc.gov",
     "database": "SAF",
     "port": 210,
-    "recnoIndex": 1007,
-    "recnoNumeric": false
+    "details": {
+      "recnoIndex": 1007,
+      "recnoNumeric": false, 
+      "defaultStructure": 6
+    }
   }
 }

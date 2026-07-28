@@ -40,7 +40,7 @@ function tokenize(str) {
     let matches = [];
     let match;
     while ((match = regex.exec(str)) !== null) {
-        matches.push(match[0].replaceAll("{quote}","\""));
+        matches.push(match[0].replaceAll("{quote}","\"\""));
     }
     return matches;
 }

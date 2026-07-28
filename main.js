@@ -430,19 +430,19 @@ function callSearchOrCache(resultSetID, query) {
     }
   } else {
     console.log('search')
-    if(catalogs[catalogID].recnoIndex) {
-      var recnoIndex = catalogs[catalogID].recnoIndex
-      var matches = query.match(/recno (\S+) ([^&]+)/)
-      if(matches) {
-        var recno = matches[2]
-        if(catalogs[catalogID].recnoNumeric) {
-          recno = recno.replaceAll(/[^0-9]/g,"")
-        }
-        recno = "\"\"" + recno.replaceAll("\"","") + "\"\""
-        query = `z3950 = "@attr 1=${recnoIndex} ${recno}"`
-      }
-    }
-    z3950client.query(resultSetID, query)
+//    if(catalogs[catalogID].recnoIndex) {
+//      var recnoIndex = catalogs[catalogID].recnoIndex
+//      var matches = query.match(/recno (\S+) ([^&]+)/)
+//      if(matches) {
+//        var recno = matches[2]
+//        if(catalogs[catalogID].recnoNumeric) {
+//          recno = recno.replaceAll(/[^0-9]/g,"")
+//        }
+//        recno = "\"\"" + recno.replaceAll("\"","") + "\"\""
+//        query = `z3950 = "@attr 1=${recnoIndex} ${recno}"`
+//      }
+//    }
+    z3950client.query(resultSetID, query, catalogs[catalogID].details)
   }
   latestQuery = query
 }

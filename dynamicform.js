@@ -43,7 +43,7 @@ function addTerm() {
     queryTerm += (queryTerm != "") ? " " : ""
     queryTerm += document.getElementById("index").value + " " +
         document.getElementById("relator").value + " " +
-        "\"" + term.replaceAll("\"","\\\"") + "\""
+        "\"" + term.replaceAll("\"","\"\"") + "\""
     searchTerms.add(new Option(queryTerm));
     operator.disabled = false;
     document.getElementById("addTermButton").disabled = true;

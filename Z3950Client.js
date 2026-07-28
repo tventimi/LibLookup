@@ -8,7 +8,7 @@ const BIB1_OBJID = '1.2.840.10003.3.1'
 const USMARC_OBJID = '1.2.840.10003.5.10'
 const UTF8_OBJID = '1.2.840.10003.15.3'
 const UCS_OBJID = [0x28, 0xD3, 0x16, 0x01, 0x00, 0x08]
-const timeout = 180000 //3 minutes
+const timeout = 120000 //2 minutes
 
 export class Z3950Client {
     port = 0
@@ -133,9 +133,9 @@ export class Z3950Client {
         this.client.write(new Uint8Array(closeRequest.toBER()))
     }
 
-    query(resultsetid, queryString) {        
+    query(resultsetid, queryString, details = null) {        
         console.log(`Sending query '${queryString}' (result set ${resultsetid})`)
-        var searchRequest = createSearchRequest(this.database, resultsetid, queryString)
+        var searchRequest = createSearchRequest(this.database, resultsetid, queryString, details)
         this.resultsetid++
         this.client.write(new Uint8Array(searchRequest.toBER()))
     }
@@ -215,11 +215,11 @@ function zQueryToASN1(zQuery) {
     return asn1
 }
 
-function createSearchRequest(database, rsid, queryString) {
+function createSearchRequest(database, rsid, queryString, details = null) {
     var encoder = new TextEncoder()
     var bib1object = new asn1js.ObjectIdentifier({value: BIB1_OBJID})
 
-    var zQuery = new Z3950Query(queryString)   
+    var zQuery = new Z3950Query(queryString, details)   
     
     console.log(JSON.stringify(zQuery,null,2))
 
