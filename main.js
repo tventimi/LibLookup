@@ -186,9 +186,7 @@ const createWindow = () => {
                     outputDoc('#downloadCSV').addClass('hidden')                 
                     outputDoc('#results').append(renderMARC(results[0]))
                     return
-                  } else {
-                    results = [results]
-                  }
+                  } 
                 } 
                 var navbar = outputDoc("#navigation")
                 if(startAtRecord > 1) {
@@ -203,6 +201,7 @@ const createWindow = () => {
                 }
                 outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
                 if(format == "mrc") {
+                  console.log(results)
                   var rawMRC = results.map((rec) => {
                     return escapeHtml(rec.as('iso2709'))
                   })
@@ -358,12 +357,12 @@ function renderRecords(records,format = 'html') {
   } else if(format == 'csv') {
     rendered += escapeHtml(csv.stringify(records))
   } else if (format == 'html') {
-    rendered += "<table class='marc'><th></th>"
+    rendered += "<table class='marc'><th class='viewlink'></th>"
     rendered += "<th>" + records[0].slice(1).join("</th><th>") + "</th>"
     for(var i = 1; i < records.length; i++) {
       records[i] = records[i].map(rec => escapeHtml(rec))
       rendered += "<tr>"
-      rendered += `<td><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
+      rendered += `<td class='viewlink'><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
             `&q=recno+%3D+%22${records[i][0]}%22&displayFields=${displayFields}'>View</a></td>`
       rendered += "<td>" + records[i].slice(1).join("</td><td>") + "</td>"
       rendered += "</tr>"

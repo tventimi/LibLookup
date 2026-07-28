@@ -122,7 +122,7 @@ function download(format) {
                 readyForNext = true
                 var recs = []
                 if(format == 'csv') {
-                    var recs = resp.split('\n').map(rec => rec.replace(/^[0-9 ]+,/,''))
+                    var recs = resp.split('\n').map(rec => rec.replace(/^[^,]+,/,''))
                     if(qi > 1) {
                         recs.shift()
                     }

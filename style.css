@@ -33,3 +33,13 @@ body {
 .hidden {
     visibility: hidden
 }
+
+@media print {
+    .sidebar, #resultCount, #download, #navigation, .viewlink {
+        display: none;
+    }
+    
+    #resultsPanel {
+        margin-left: 0px
+    }
+}
