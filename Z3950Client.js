@@ -242,13 +242,14 @@ function createSearchRequest(database, rsid, queryString, details = null) {
     return req
 }
 
-function createPresentRequest(rsid, recno = 1, count = 1) {
+function createPresentRequest(rsid, recno = 1, count = 1, elementSet = 'F') {
     var encoder = new TextEncoder()
     var marcObj = new asn1js.ObjectIdentifier({value: USMARC_OBJID})
     var req = createASN1object({id: 24, value: [
         {id: 31, value: encoder.encode(rsid)}, //result set ID
         {id: 30, value: recno}, //starting record number
         {id: 29, value: count},  //number of records to return
+        {id: 19, value: [{id: 0, value: encoder.encode(elementSet)}]},
         {id: 104, value: marcObj.valueBlock.toBER()} //USMARC format
     ]})
     return req
