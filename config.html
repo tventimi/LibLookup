@@ -14,11 +14,21 @@
     <link rel="stylesheet" href="./style.css" type="text/css"/>
     <title>LibLookup</title>
   </head>
-  <body>
-    <h2>LibLookup</h2>
-    <p><img title='LibLookup' src='images/LL-icon.png' width="150"/></p>
-    <p>Things are looking up...</p>
-    <button id="browserButton">Open in browser</button>
+  <body>    
+    <div class="sidebar">
+      <h2>LibLookup</h2>
+      <p>Things are looking up...</p>
+      <p><img title='LibLookup' src='images/LL-icon.png' width="150"/></p>
+      <button id="browserButton">Open in browser</button>
+    </div>
+    <div id="settingsPanel">
+      <h4>Catalogs:</h4>
+      <select title="catalogs" id="catalogList" size="10">
+
+      </select>
+      <br/><br/>
+      <button id="loadConfigButton">Load config file</button>
+    </div>
     <script src="renderer.js" type="application/javascript"></script>
   </body>
 </html>

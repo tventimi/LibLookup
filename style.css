@@ -24,6 +24,16 @@ body {
     display: flex
 }
 
+#settingsPanel {
+    flex: 1;
+    padding: 20px;
+    margin-left: 200px;
+}
+
+#catalogList {
+    min-width: 100%
+}
+
 #resultsPanel {
     flex: 1;
     padding: 20px;

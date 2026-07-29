@@ -7,12 +7,12 @@ import * as path from 'path';
 import * as https from 'https'
 import { fileURLToPath } from 'node:url';
 import { Readable } from 'node:stream'
-import { shell } from 'electron'
+import { shell, dialog } from 'electron'
 import { Subject, finalize }  from 'rxjs'
 import started from 'electron-squirrel-startup';
 import * as csv from 'csv/sync'
 import { stringify } from 'csv/sync'
-import catalogs from './config/catalogs.json' with {"type": "json"}
+//import catalogs from './config/catalogs.json' with {"type": "json"}
 import * as cheerio from 'cheerio'
 import { start } from 'node:repl';
 
@@ -24,7 +24,7 @@ const libLookupDomain = 'localhost'
 const libLookupPort = 3950
 const baseURL = `https://${libLookupDomain}:${libLookupPort}/`
 const defaultPageSize = 50
-const intervalLength = 100
+const intervalLength = 100 //100ms
 
 var resultsPerPage = defaultPageSize
 var latestQuery = ""
@@ -35,15 +35,17 @@ var latestResults = []
 var displayResults = []
 var displayFields = []
 var resultSetID = ""
+var catalogs = null
 var catalogID = ""
 var startAtRecord = 1
 var expectedResultCount = defaultPageSize
 var win
 var z3950client
 
+
 const createWindow = () => {  
   win = new BrowserWindow({
-    width: 200,
+    width: 500,
     height: 370,
     webPreferences: {
       preload: path.join(import.meta.dirname, 'preload.js'),
@@ -52,7 +54,10 @@ const createWindow = () => {
     }
   })
 
+  loadConfigJSON()
+
   win.loadFile('config.html').then(() => {
+
     var headers = {
       'Access-Control-Allow-Origin': '*', 
       'Access-Control-Allow-Headers': '*',
@@ -201,7 +206,6 @@ const createWindow = () => {
                 }
                 outputDoc("#resultCount").append(`Displaying ${startAtRecord} to ${startAtRecord + displayResults.length - 1} of ${latestResultCount} results`)
                 if(format == "mrc") {
-                  console.log(results)
                   var rawMRC = results.map((rec) => {
                     return escapeHtml(rec.as('iso2709'))
                   })
@@ -462,6 +466,17 @@ function escapeHtml(text) {
   return text.toString().replace(/[&<>"']/g, (m) => map[m]);
 }
 
+function loadConfigJSON() {
+  const filePath = path.join(app.getPath('userData'), 'catalogs.json'); 
+  try {   
+    const data = fs.readFileSync(filePath)
+    catalogs = JSON.parse(data);
+    console.log(catalogs)
+  } catch(error) {
+    console.error("Failed to read JSON file:", error)
+  }
+}
+
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()    
@@ -479,4 +494,43 @@ app.on('window-all-closed', () => {
 
 ipcMain.on('button-clicked', (event) => {
     shell.openExternal(baseURL)
+});
+
+ipcMain.handle('get-catalog-list', async () => {
+  if(!catalogs) {
+    return null
+  } else {
+    return Object.keys(catalogs).map(catcode => catalogs[catcode].name)
+  }
+})
+
+ipcMain.handle('select-config-file', async () => {
+  const result = await dialog.showOpenDialog({
+    properties: ['openFile'],  
+    filters: [
+      { name: 'JSON', extensions: ['json'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  });
+
+  if (result.canceled) {
+    return null; 
+  } else {
+    return result.filePaths[0]; 
+  }
+});
+
+ipcMain.handle('load-config-file', async (event, sourceFilePath) => {
+  const destinationDir = app.getPath('userData');
+  const fileName = path.basename(sourceFilePath);
+  const destinationPath = path.join(destinationDir, fileName);
+
+  try {
+    fs.copyFileSync(sourceFilePath, destinationPath)
+    console.log('File was copied to:', destinationPath);
+    loadConfigJSON()
+  } catch(error) {
+    console.error('Error copying file:', error.message);
+  }
+  return
 });

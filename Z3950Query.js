@@ -26,7 +26,6 @@ export class Z3950Query {
 
     constructor(query, details = null, isRaw = false) {
         var queryTokens = this.tokenize(query)        
-        console.log(queryTokens)
         if(isRaw){
             this.rawZ3950toQuery(query)
             return
