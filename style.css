@@ -40,6 +40,15 @@ body {
     margin-left: 250px;
 }
 
+#appTitle tr {
+    vertical-align: bottom;
+}
+
+.configButton {
+    padding: 5px;
+    font-size: 18px
+}
+
 .hidden {
     visibility: hidden
 }

@@ -15,20 +15,18 @@
     <title>LibLookup</title>
   </head>
   <body>    
-    <div class="sidebar">
-      <h2>LibLookup</h2>
-      <p>Things are looking up...</p>
-      <p><img title='LibLookup' src='images/LL-icon.png' width="150"/></p>
-      <button id="browserButton">Open in browser</button>
-    </div>
-    <div id="settingsPanel">
-      <h4>Catalogs:</h4>
-      <select title="catalogs" id="catalogList" size="10">
-
-      </select>
-      <br/><br/>
-      <button id="loadConfigButton">Load config file</button>
-    </div>
+    <table id="appTitle"><tr>
+      <td><img title='LibLookup' src='images/LL-icon.png' width="70"/></td>
+      <td>&nbsp;&nbsp;</td>
+      <td><h2>LibLookup</h2>Things are looking up...</td>
+    </tr></table>  
+    <br/>    
+    <button class="configButton" id="browserButton">Open in browser</button>  
+    <h4>Catalogs:</h4>
+    <select title="catalogs" id="catalogList" size="10">
+    </select>
+    <br/><br/>
+    <button class="configButton" id="loadConfigButton">Load config file</button>
     <script src="renderer.js" type="application/javascript"></script>
   </body>
 </html>

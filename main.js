@@ -12,7 +12,6 @@ import { Subject, finalize }  from 'rxjs'
 import started from 'electron-squirrel-startup';
 import * as csv from 'csv/sync'
 import { stringify } from 'csv/sync'
-//import catalogs from './config/catalogs.json' with {"type": "json"}
 import * as cheerio from 'cheerio'
 import { start } from 'node:repl';
 
@@ -23,6 +22,7 @@ Menu.setApplicationMenu(null);
 const libLookupDomain = 'localhost'
 const libLookupPort = 3950
 const baseURL = `https://${libLookupDomain}:${libLookupPort}/`
+const configFileName = "catalogs.json"
 const defaultPageSize = 50
 const intervalLength = 100 //100ms
 
@@ -45,8 +45,8 @@ var z3950client
 
 const createWindow = () => {  
   win = new BrowserWindow({
-    width: 500,
-    height: 370,
+    width: 300,
+    height: 500,
     webPreferences: {
       preload: path.join(import.meta.dirname, 'preload.js'),
       contextIsolation: true,
@@ -100,12 +100,18 @@ const createWindow = () => {
             response.end('404 Not Found');
             serverReady = true
             return;
-          } 
-          response.writeHead(200, headers);
+          }           
           if(filename.endsWith('png')) {
             headers['Content-Type'] = 'image/png'
             response.writeHead(200, headers);
             response.end(data)
+            serverReady = true
+            return
+          }
+          response.writeHead(200, headers);
+          if(!catalogs) {
+            response.end("No catalogs have been configured in LibLookup.  Please load a configuration file in the desktop app.")
+            serverReady = true
             return
           }
           
@@ -467,7 +473,7 @@ function escapeHtml(text) {
 }
 
 function loadConfigJSON() {
-  const filePath = path.join(app.getPath('userData'), 'catalogs.json'); 
+  const filePath = path.join(app.getPath('userData'), configFileName); 
   try {   
     const data = fs.readFileSync(filePath)
     catalogs = JSON.parse(data);
@@ -522,8 +528,7 @@ ipcMain.handle('select-config-file', async () => {
 
 ipcMain.handle('load-config-file', async (event, sourceFilePath) => {
   const destinationDir = app.getPath('userData');
-  const fileName = path.basename(sourceFilePath);
-  const destinationPath = path.join(destinationDir, fileName);
+  const destinationPath = path.join(destinationDir, configFileName);
 
   try {
     fs.copyFileSync(sourceFilePath, destinationPath)
