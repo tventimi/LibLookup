@@ -47,11 +47,14 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "images/LL-icon.ico"
+      "icon": "images/LL-icon.ico",
+      "signtoolOptions": {
+        "sign": "./customSign.cjs"
+      }
     },
     "nsis": {
       "differentialPackage": false,
-      "createDesktopShortcut": "always"
+      "createDesktopShortcut": true
     }
   }
 }

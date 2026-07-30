@@ -4,3 +4,4 @@ webserver/
 out/
 config/*
 dist/*
+customSign.cjs
