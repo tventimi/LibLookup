@@ -51,7 +51,7 @@
     },
     "nsis": {
       "differentialPackage": false,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": "always"
     }
   }
 }
