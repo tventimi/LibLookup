@@ -232,8 +232,10 @@ const createWindow = () => {
           )
           if(singleRecord && displayResults.length > 0) {
             displayResults = latestResults.filter((rec) => {
-              return rec.get('001')[0].value.includes(decodeURIComponent(query)
-                .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
+              console.log(rec)
+              return rec.get('001').length > 0 && 
+                    rec.get('001')[0].value.includes(decodeURIComponent(query)
+                      .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
             })
             if(displayResults.length == 1) {
               resultsStream.next([displayResults[0]])
@@ -246,7 +248,12 @@ const createWindow = () => {
             latestQuery = ""
             z3950Connect(catalogID)
           } 
-          z3950search(resultSetID, query)               
+          var interval = setInterval(() => {
+            if(z3950client.isConnected()) {
+              z3950search(resultSetID, query)   
+              clearInterval(interval)                
+            }
+          },100)            
         })
         clearInterval(requestInterval)
       },intervalLength) 
@@ -467,6 +474,7 @@ function z3950search(resultSetID, query) {
     },1000)
   }
 }
+
 
 function escapeHtml(text) {
   const map = {

@@ -17,6 +17,7 @@ export class Z3950Client {
     dataBuffer = null
     client = null
     resultsets = []
+    inSession = false
 
     constructor(port, host, database, username, password) {
         this.port = port
@@ -35,7 +36,8 @@ export class Z3950Client {
     }
 
     isConnected() {
-        return (this.client?.readyState === 'open')
+        return this.inSession
+        //return (this.client?.readyState === 'open')
     }
 
     connect(callback) {
@@ -64,6 +66,7 @@ export class Z3950Client {
                     case 21:
                         respType = 'initResponse'  
                         console.log(`Connected to ${this.host} on port ${this.port}`);
+                        this.inSession = true
                         break;
                     case 23:
                         respType = 'searchResponse'
@@ -105,6 +108,7 @@ export class Z3950Client {
         });
         this.client.on('timeout', () => {
             console.log('Socket idle timeout reached. Closing connection.');
+            this.inSession = false
             this.client.setTimeout(0)
             this.client.end(); 
         });
@@ -112,6 +116,7 @@ export class Z3950Client {
             console.log('Connection closed');
         });        
         this.client.on('error', (err) => {
+            this.inSession = false
             console.error('Socket error:', err);
             if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
                 callback('error','timeout')
@@ -128,6 +133,7 @@ export class Z3950Client {
     }
 
     disconnect() {
+        this.inSession = false
         console.log(`Closing connection`);
         var closeRequest = createCloseRequest()
         this.client.write(new Uint8Array(closeRequest.toBER()))
