@@ -1,13 +1,14 @@
 {
   "name": "LibLookup",
-  "version": "1.0.0",
+  "version": "0.0.2-alpha",
   "description": "Connect to various library catalogs",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "ship": "electron-builder build --publish always"
   },
   "author": "Thomas Ventimiglia",
   "license": "Apache-2.0",
@@ -27,11 +28,30 @@
     "cheerio": "^1.2.0",
     "csv": "^6.6.0",
     "electron-squirrel-startup": "^1.0.1",
+    "electron-updater": "^6.8.9",
     "express": "^5.2.1",
     "localtunnel": "^2.0.2",
     "marcjs": "^3.0.2",
     "marcrecord": "^1.4.0",
     "rxjs": "^7.8.2"
   },
-  "type": "module"
+  "type": "module",
+  "build": {
+    "appId": "com.example.myapp",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "tventimi",
+        "repo": "LibLookup"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "images/LL-icon.ico"
+    },
+    "nsis": {
+      "differentialPackage": false,
+      "createDesktopShortcut": true
+    }
+  }
 }

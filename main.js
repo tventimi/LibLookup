@@ -14,6 +14,8 @@ import * as csv from 'csv/sync'
 import { stringify } from 'csv/sync'
 import * as cheerio from 'cheerio'
 import { start } from 'node:repl';
+import autoUpdaterPkg from 'electron-updater';
+const { autoUpdater } = autoUpdaterPkg;
 
 if (started) app.quit();
 
@@ -42,6 +44,7 @@ var expectedResultCount = defaultPageSize
 var win
 var z3950client
 
+autoUpdater.autoDownload = false;
 
 const createWindow = () => {  
   win = new BrowserWindow({
@@ -194,7 +197,9 @@ const createWindow = () => {
                 outputDoc('#resultsPanel').removeClass('hidden')
                 if(singleRecord) {   
                   if(format == 'html') {
-                    outputDoc('#downloadCSV').addClass('hidden')                 
+                    outputDoc('#downloadCSV').addClass('hidden')    
+                    outputDoc('#abortButton').addClass('hidden')   
+                    outputDoc('#downloadStatus').addClass('hidden')                
                     outputDoc('#results').append(renderMARC(results[0]))
                     return
                   } 
@@ -259,6 +264,9 @@ const createWindow = () => {
 app.whenReady().then(() => {
   if(!win) {
     createWindow()
+    if (process.platform === 'win32') {    
+      autoUpdater.checkForUpdatesAndNotify();
+    }
   } 
 })
 
@@ -485,7 +493,10 @@ function loadConfigJSON() {
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()    
+    createWindow()  
+    if (process.platform === 'win32') {    
+      autoUpdater.checkForUpdatesAndNotify();
+    }
   }
 })
   
@@ -538,4 +549,37 @@ ipcMain.handle('load-config-file', async (event, sourceFilePath) => {
     console.error('Error copying file:', error.message);
   }
   return
+});
+
+// --- Auto-Updater Event Listeners ---
+
+// Update available: notify user and ask to download
+autoUpdater.on('update-available', (info) => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Available',
+    message: `A new version (${info.version}) is available. Would you like to download it?`,
+    buttons: ['Yes', 'No']
+  }).then((result) => {
+    if (result.response === 0) {
+      autoUpdater.downloadUpdate();
+    }
+  });
+});
+
+// Update downloaded: prompt user to restart and install
+autoUpdater.on('update-downloaded', (info) => {
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Update Ready',
+    message: `Version ${info.version} has been downloaded. The application will restart to apply the update.`,
+    buttons: ['Restart Now']
+  }).then(() => {
+    autoUpdater.quitAndInstall(); // Restarts app and applies update
+  });
+});
+
+// Handle errors gracefully
+autoUpdater.on('error', (err) => {
+  console.error('Error during auto-update:', err);
 });
