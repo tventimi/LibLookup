@@ -54,7 +54,8 @@
     },
     "nsis": {
       "differentialPackage": false,
-      "createDesktopShortcut": true
+      "createDesktopShortcut": true,
+      "artifactName": "LibLookup-Windows-Setup-${version}.${ext}"
     }
   }
 }

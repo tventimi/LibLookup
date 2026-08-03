@@ -1,10 +1,20 @@
 const urlParams = new URLSearchParams(window.location.search)
-var catalog = ""
-var query = ""
-var displayFields = ""
 var abort = false
 
-urlParams.forEach((value, key) => {
+const queryForm = document.getElementById("queryForm")
+const inputs = queryForm.querySelectorAll('select, input');
+
+window.addEventListener('DOMContentLoaded', () => {
+  inputs.forEach(input => {
+    if(input.id === "queryTerm" || input.id === "searchTerms") {
+        return
+    }
+    const savedValue = localStorage.getItem(input.id);
+    if (savedValue) {
+      input.value = savedValue;
+    }
+  });
+  urlParams.forEach((value, key) => {
     if(key === "catalog") {
         document.getElementById("catalog").value = value
         catalog = value
@@ -28,11 +38,15 @@ urlParams.forEach((value, key) => {
         document.getElementById("displayFields").value = value
         displayFields = value
     } 
-})
+  });
+});
 
-if(catalog && query) {
-    document.title = "LibLookup: " + catalog + " " + query
-}     
+queryForm.addEventListener('input', (e) => {
+  if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') {
+    localStorage.setItem(e.target.id, e.target.value);
+  }
+});
+
 
 function tokenize(str) {
     str = str.replaceAll("\"\"","{quote}")

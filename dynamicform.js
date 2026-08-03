@@ -56,6 +56,17 @@ function addTerm() {
 document.getElementById("deleteTermButton").addEventListener("click", deleteTerm);
 function deleteTerm() {
     var searchTerms = document.getElementById("searchTerms")
+    var queryTerm = searchTerms.options[searchTerms.selectedIndex].value
+    var queryTokens = tokenize(queryTerm)
+    console.log(queryTokens)
+    document.getElementById("queryTerm").value = queryTokens.pop().replaceAll("\"\"","\"").replace(/^\"/,'').replace(/\"$/,'')
+    document.getElementById("relator").value = queryTokens.pop()
+    document.getElementById("index").value = queryTokens.pop()
+    document.getElementById("addTermButton").disabled = false
+    if(queryTokens.length > 0) {
+        document.getElementById("operator").value = queryTokens.pop().toLowerCase()
+    }
+    
     if(searchTerms.selectedIndex === 0 && searchTerms.length > 1) {
         searchTerms.options[1].text = searchTerms.options[1].value.replace(/^[A-Z]* /,"")
     }

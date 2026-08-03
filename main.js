@@ -232,7 +232,6 @@ const createWindow = () => {
           )
           if(singleRecord && displayResults.length > 0) {
             displayResults = latestResults.filter((rec) => {
-              console.log(rec)
               return rec.get('001').length > 0 && 
                     rec.get('001')[0].value.includes(decodeURIComponent(query)
                       .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
