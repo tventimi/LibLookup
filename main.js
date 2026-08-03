@@ -105,12 +105,13 @@ const createWindow = () => {
             return;
           }           
           if(filename.endsWith('png')) {
-            headers['Content-Type'] = 'image/png'
-            response.writeHead(200, headers);
+            var imageHeaders = { ...headers }
+            imageHeaders['Content-Type'] = 'image/png'
+            response.writeHead(200, imageHeaders);
             response.end(data)
             serverReady = true
             return
-          }
+          } 
           response.writeHead(200, headers);
           if(!catalogs) {
             response.end("No catalogs have been configured in LibLookup.  Please load a configuration file in the desktop app.")
