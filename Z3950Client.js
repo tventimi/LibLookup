@@ -29,6 +29,7 @@ export class Z3950Client {
     }
 
     initiateConnection() {
+        console.log(`Connecting to ${this.host} on port ${this.port}...`)
         this.client = net.createConnection({ 
                 port: this.port, 
                 host: this.host,
@@ -36,8 +37,7 @@ export class Z3950Client {
     }
 
     isConnected() {
-        return this.inSession
-        //return (this.client?.readyState === 'open')
+        return this.inSession && this.client?.readyState === 'open'
     }
 
     connect(callback) {
@@ -110,7 +110,6 @@ export class Z3950Client {
             console.log('Socket idle timeout reached. Closing connection.');
             this.inSession = false
             this.client.setTimeout(0)
-            this.client.end(); 
         });
         this.client.on('close', () => {
             console.log('Connection closed');
@@ -125,6 +124,7 @@ export class Z3950Client {
                 console.error('Other error:', err.message);
                 callback('error',err.message)
             }
+            this.client.destroy()
         });
     }
 

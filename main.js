@@ -228,6 +228,20 @@ const createWindow = () => {
                   outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))                    
                 }
               }
+            },
+            error => {
+              console.log(error)
+              if(format == 'html') {
+                outputDoc('#resultsPanel').removeClass('hidden')
+                outputDoc('.downloadButton').addClass('hidden')
+                outputDoc("#results").append(error)
+                response.end(outputDoc.html())
+              } else {
+                response.end(error)
+              }
+              serverReady = true
+              resultsSubscription.unsubscribe()
+              resultsStream = new Subject()
             }                
           )
           if(singleRecord && displayResults.length > 0) {
@@ -247,10 +261,14 @@ const createWindow = () => {
             latestQuery = ""
             z3950Connect(catalogID)
           } 
+          var x = 0
           var interval = setInterval(() => {
-            if(z3950client.isConnected()) {
+            if(z3950client?.isConnected()) {  
               z3950search(resultSetID, query)   
               clearInterval(interval)                
+            }
+            if(!z3950client) {
+              clearInterval(interval)
             }
           },100)            
         })
@@ -280,6 +298,8 @@ function z3950callback(respType, respBody) {
   switch(respType) {
     case 'error':
       console.log(respBody)
+      resultsStream.error('Cannot connect to catalog.  Please check your configuration or try again later.')
+      z3950client = null      
       break;
     case 'searchResponse':
       var resultCount = respBody
@@ -466,9 +486,12 @@ function z3950search(resultSetID, query) {
     z3950Connect(catalogID)
     latestQuery = ""
     var interval = setInterval(() => {
-      if(z3950client.isConnected()) {
+      if(z3950client?.isConnected()) {
         callSearchOrCache(resultSetID,query)      
         clearInterval(interval)                
+      }
+      if(!z3950client) {
+        clearInterval(interval)
       }
     },1000)
   }
