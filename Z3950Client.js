@@ -114,6 +114,7 @@ export class Z3950Client {
         });
         this.client.on('close', () => {
             console.log('Connection closed');
+            this.inSession = false
         });        
         this.client.on('error', (err) => {
             this.inSession = false
