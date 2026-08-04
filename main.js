@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron/main'
 import { Z3950Client } from './Z3950Client.js';
 import { SRUClient } from './SRUClient.js';
+import { CustomClient } from './CustomClient.js';
 import { Marc } from 'marcjs'
 import * as readline from 'node:readline';
 import * as fs from 'node:fs';
@@ -259,12 +260,37 @@ const createWindow = () => {
             }
           }
           const catalogType = catalogs[catalog].type
-          if(catalogType == "almasru") {
+          if(catalogType == "custom") {
+            var customClient = new CustomClient(catalogs[catalog])
+            customClient.connect().then((success) => {
+              if(success) {
+                catalogID = catalog
+                latestResults = []
+                displayResults = []
+                var calculateCount = !((catalogID == catalog) && (query == latestQuery))
+                customClient.query(query,startAtRecord,maxRecs,calculateCount).then((results) => {
+                  if(calculateCount) {
+                    latestResultCount = results.numberOfRecords
+                  }
+                  latestQuery = query
+                  for(var i = 0; i < results.records.length; i++) {
+                    var rec = Marc.parse(results.records[i],'marcxml')                  
+                    latestResults.push(rec)
+                    displayResults.push(rec)          
+                  }                   
+                  resultsStream.next(displayResults)
+                  resultsStream.next(null)
+                })
+              } else {
+                resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+              }
+            })
+          } else if(catalogType == "almasru") {
             var sruClient = new SRUClient(catalogs[catalog].baseurl)
             sruClient.connect().then((success) => {
               if(success) {
                 catalogID = catalog
-                latestQuery = ""
+                latestQuery = query
                 latestResults = []
                 displayResults = []
                 sruClient.query(query,startAtRecord,maxRecs).then((results) => {

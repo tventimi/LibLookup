@@ -28,9 +28,9 @@ export class SRUQuery {
             if(queryString != "") {
                 this.queryString += " "
             }
-            this.queryString += "(" + indexes[index] + " " + relators[relator] + " " + searchTerm + ") " 
+            this.queryString += "(" + indexes[index] + " " + relators[relator] + " " + searchTerm + " )" 
             if(i+3 < queryTokens.length) {
-                this.queryString += queryTokens[i+3]
+                this.queryString += " " + queryTokens[i+3]
             }
         }
     }

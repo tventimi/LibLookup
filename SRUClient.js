@@ -24,7 +24,10 @@ export class SRUClient {
     async query(queryString, startRecord = 1, maximumRecords = 50) {
         const sruQuery = new SRUQuery(queryString)
         console.log("SRU query: " + sruQuery.queryString)
-        const queryResponse = await fetch(this.baseurl + "?version=1.2&operation=searchRetrieve&query=" + encodeURIComponent(sruQuery.queryString) + "&startRecord=" + startRecord + "&maximumRecords=" + maximumRecords)
+        const queryURL = this.baseurl + "?version=1.2&operation=searchRetrieve&query=" + 
+            encodeURIComponent(sruQuery.queryString) + "&startRecord=" + startRecord + "&maximumRecords=" + maximumRecords
+        console.log(queryURL)
+        const queryResponse = await fetch(queryURL)
         const responseText = await queryResponse.text()
         const parser = new DOMParser();
 
