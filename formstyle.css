@@ -7,6 +7,10 @@ div {
     padding: 5px;
 }
 
+select {
+    max-width: 100%;
+}
+
 .scroll-container {
     overflow-x: auto;
 }

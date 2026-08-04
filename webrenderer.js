@@ -13,6 +13,9 @@ window.addEventListener('DOMContentLoaded', () => {
     if (savedValue) {
       input.value = savedValue;
     }
+    if(input.value == "" && input.nodeName == "SELECT") {
+      input.value = input.options[0].value;
+    }
   });
   urlParams.forEach((value, key) => {
     if(key === "catalog") {

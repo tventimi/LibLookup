@@ -299,7 +299,7 @@ function z3950callback(respType, respBody) {
   switch(respType) {
     case 'error':
       console.log(respBody)
-      resultsStream.error('Cannot connect to catalog.  Please check your configuration or try again later.')
+      resultsStream.error('Cannot connect to catalog \"' + catalogs[catalogID]?.name + '\". Please check your configuration or try again later.')
       z3950client = null      
       break;
     case 'searchResponse':
