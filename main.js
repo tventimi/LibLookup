@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, Menu } from 'electron/main'
 import { Z3950Client } from './Z3950Client.js';
+import { SRUClient } from './SRUClient.js';
 import { Marc } from 'marcjs'
 import * as readline from 'node:readline';
 import * as fs from 'node:fs';
@@ -257,21 +258,45 @@ const createWindow = () => {
               return
             }
           }
-          if(catalog != catalogID || !z3950client?.isConnected()) {
-            catalogID = catalog
-            latestQuery = ""
-            z3950Connect(catalogID)
-          } 
-          var x = 0
-          var interval = setInterval(() => {
-            if(z3950client?.isConnected()) {  
-              z3950search(resultSetID, query)   
-              clearInterval(interval)                
-            }
-            if(!z3950client) {
-              clearInterval(interval)
-            }
-          },100)            
+          const catalogType = catalogs[catalog].type
+          if(catalogType == "almasru") {
+            var sruClient = new SRUClient(catalogs[catalog].baseurl)
+            sruClient.connect().then((success) => {
+              if(success) {
+                catalogID = catalog
+                latestQuery = ""
+                latestResults = []
+                displayResults = []
+                sruClient.query(query,startAtRecord,maxRecs).then((results) => {
+                  latestResultCount = results.numberOfRecords
+                  for(var i = 0; i < results.records.length; i++) {
+                    var rec = Marc.parse(results.records[i],'marcxml')                  
+                    latestResults.push(rec)
+                    displayResults.push(rec)          
+                  } 
+                  resultsStream.next(displayResults)
+                  resultsStream.next(null)
+                })
+              } else {
+                resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+              }
+            })
+          } else if(catalogType == "z3950") {
+            if(catalog != catalogID || !z3950client?.isConnected()) {
+              catalogID = catalog
+              latestQuery = ""
+              z3950Connect(catalogID)
+            } 
+            var interval = setInterval(() => {
+              if(z3950client?.isConnected()) {  
+                z3950search(resultSetID, query)   
+                clearInterval(interval)                
+              }
+              if(!z3950client) {
+                clearInterval(interval)
+              }
+            },100)
+          }            
         })
         clearInterval(requestInterval)
       },intervalLength) 
@@ -516,7 +541,6 @@ function loadConfigJSON() {
   try {   
     const data = fs.readFileSync(filePath)
     catalogs = JSON.parse(data);
-    console.log(catalogs)
   } catch(error) {
     console.error("Failed to read JSON file:", error)
   }

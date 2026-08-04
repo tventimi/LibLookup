@@ -33,7 +33,9 @@
     "localtunnel": "^2.0.2",
     "marcjs": "^3.0.2",
     "marcrecord": "^1.4.0",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "xmldom": "^0.6.0",
+    "xpath": "^0.0.34"
   },
   "type": "module",
   "build": {

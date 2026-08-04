@@ -1,3 +1,5 @@
+import { tokenize } from './queryutils.js'
+
 const operators = {
     'and': 0, 
     'or': 1, 
@@ -153,17 +155,5 @@ export class Z3950Query {
                 }
             }
         }
-    }
-
-    // Simple tokenizer to split by whitespace but preserve quoted strings
-    tokenize(str) {
-        str = str.replaceAll(/\"\"/g,"{quote}")
-        const regex = /@\w+|@attr \d+=\d+|"([^"\\]|\\.)+"|[^\s]+/g;
-        let matches = [];
-        let match;
-        while ((match = regex.exec(str)) !== null) {
-            matches.push(match[0].replaceAll("{quote}","\""));
-        }
-        return matches;
     }
 }
