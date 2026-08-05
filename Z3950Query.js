@@ -76,7 +76,7 @@ export class Z3950Query {
                     return
                 }
                 this.type = "operand"
-                if(index == "z3950") {
+                if(index == "raw") {
                     var zQuery = new Z3950Query(searchTerm,details,true)
                     this.type = zQuery.type
                     this.queryString = zQuery.queryString

@@ -28,7 +28,12 @@ export class SRUQuery {
             if(queryString != "") {
                 this.queryString += " "
             }
-            this.queryString += "(" + indexes[index] + " " + relators[relator] + " " + searchTerm + " )" 
+            if(index == "raw") {
+                searchTerm = searchTerm.replace(/^\"/,'').replace(/\"$/,'')
+                this.queryString += "(" + searchTerm + " )"
+            } else {
+                this.queryString += "(" + indexes[index] + " " + relators[relator] + " " + searchTerm + " )" 
+            }
             if(i+3 < queryTokens.length) {
                 this.queryString += " " + queryTokens[i+3]
             }
