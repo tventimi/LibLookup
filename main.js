@@ -262,10 +262,10 @@ const createWindow = () => {
             var customClient = new CustomClient(catalogs[catalog])
             customClient.connect().then((success) => {
               if(success) {
+                var calculateCount = !((catalogID == catalog) && (query == latestQuery))
                 catalogID = catalog
                 latestResults = []
                 displayResults = []
-                var calculateCount = !((catalogID == catalog) && (query == latestQuery))
                 customClient.query(query,startAtRecord,maxRecs,calculateCount).then((results) => {
                   if(calculateCount) {
                     latestResultCount = results.numberOfRecords
