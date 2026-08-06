@@ -38,7 +38,7 @@ var latestResultCount = 0
 var latestResults = []
 var displayResults = []
 var displayFields = []
-var resultSetID = ""
+
 var catalogs = null
 var catalogID = ""
 var startAtRecord = 1
@@ -175,8 +175,6 @@ const createWindow = () => {
             serverReady = true
             return
           }
-
-          resultSetID = "1"
           var resultsSubscription = resultsStream.subscribe(
             results => {
               if(results == null) {
@@ -311,16 +309,33 @@ const createWindow = () => {
             if(catalog != catalogID || !z3950client?.isConnected()) {
               catalogID = catalog
               latestQuery = ""
-              z3950Connect(catalogID)
+              z3950client = new Z3950Client(catalogs[catalog].port, catalogs[catalog].host, catalogs[catalog].database, 
+                    catalogs[catalog].username ?? "", catalogs[catalog].password ?? "")
+              z3950client.connect()
+
             } 
-            var interval = setInterval(() => {
-              if(z3950client?.isConnected()) {  
-                z3950search(resultSetID, query)   
+            var interval = setInterval(async () => {
+              if(z3950client.latestError != "") {
+                resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+                clearInterval(interval)  
+              }
+              if(z3950client?.isConnected()) { 
+                catalogID = catalog
+                latestQuery = query
+                latestResults = []
+                displayResults = [] 
+                z3950client.query(query,startAtRecord,maxRecs,catalogs[catalog].details).then((results) => {
+                  latestResultCount = results.numberOfRecords
+                  for(var i = 0; i < results.records.length; i++) {
+                    var rec = Marc.parse(Buffer.from(results.records[i],'binary'),'iso2709')                 
+                    latestResults.push(rec)
+                    displayResults.push(rec)          
+                  } 
+                  resultsStream.next(displayResults)
+                  resultsStream.next(null)
+                })
                 clearInterval(interval)                
-              }
-              if(!z3950client) {
-                clearInterval(interval)
-              }
+              }              
             },100)
           }            
         })
@@ -346,53 +361,6 @@ app.whenReady().then(() => {
   } 
 })
 
-function z3950callback(respType, respBody) {
-  switch(respType) {
-    case 'error':
-      console.log(respBody)
-      resultsStream.error('Cannot connect to catalog \"' + catalogs[catalogID]?.name + '\". Please check your configuration or try again later.')
-      z3950client = null      
-      break;
-    case 'searchResponse':
-      var resultCount = respBody
-      console.log(`${resultCount} results found`)
-      latestResultCount = resultCount
-      latestResults = []
-      displayResults = []
-      expectedResultCount = Math.min(resultCount-startAtRecord+1,resultsPerPage)
-      if(expectedResultCount > 0) {
-        z3950client.getRecords(resultSetID, startAtRecord, expectedResultCount)
-      } else {
-        resultsStream.next([])
-        resultsStream.next(null)
-      }
-      break;
-    case 'presentResponse':
-      if(respBody == "") {
-        resultsStream.next([])
-        resultsStream.next(null)
-      } else {
-        var marcRecords = respBody.split("\x1D")
-        if(marcRecords[marcRecords.length-1] == "") {
-          marcRecords.pop()       
-        } 
-        for(var i = 0; i < marcRecords.length; i++) {
-          var rec = Marc.parse(Buffer.from(marcRecords[i],'binary'),'iso2709')                    
-          latestResults.push(rec)
-          displayResults.push(rec)          
-        }         
-        if(latestResults.length == expectedResultCount) {          
-          resultsStream.next(displayResults.map((rec) => {
-            return rec
-          })) 
-          resultsStream.next(null)       
-        } else {
-          z3950client.getRecords(resultSetID,startAtRecord+latestResults.length,expectedResultCount-latestResults.length)
-        }
-      }        
-      break;
-  }
-}
 
 function filterRecordFields(marc, fields = []) {
   var filteredFields = []
@@ -497,59 +465,6 @@ function renderMARC(marc) {
   return rec
 }
 
-function z3950Connect(catalog) {
-  var i = 1
-  var host = catalogs[catalog].host
-  var port = catalogs[catalog].port
-  var database = catalogs[catalog].database
-  var username = catalogs[catalog].username ?? ""
-  var password = catalogs[catalog].password ?? ""
-
-  if(z3950client?.isConnected()) {
-    z3950client.disconnect()
-  }
-  z3950client = new Z3950Client(port, host, database, username, password)
-  z3950client.connect(z3950callback)
-}
-
-function callSearchOrCache(resultSetID, query) {
-  latestResults = []
-  displayResults = []      
-  if(latestQuery == query && z3950client.isConnected()) {
-    console.log('cache')
-    expectedResultCount = Math.min(resultsPerPage,latestResultCount-startAtRecord+1)
-    if(expectedResultCount > 0) {
-      z3950client.getRecords(resultSetID,startAtRecord,expectedResultCount)
-    } else {
-      resultsStream.next([])
-      resultsStream.next(null)     
-    }
-  } else {
-    console.log('search')
-    z3950client.query(resultSetID, query, catalogs[catalogID].details)
-  }
-  latestQuery = query
-}
-
-function z3950search(resultSetID, query) {
-  if(z3950client?.isConnected()) {
-    callSearchOrCache(resultSetID,query)
-  } else {
-    z3950Connect(catalogID)
-    latestQuery = ""
-    var interval = setInterval(() => {
-      if(z3950client?.isConnected()) {
-        callSearchOrCache(resultSetID,query)      
-        clearInterval(interval)                
-      }
-      if(!z3950client) {
-        clearInterval(interval)
-      }
-    },1000)
-  }
-}
-
-
 function escapeHtml(text) {
   const map = {
     '&': '&amp;',
@@ -579,6 +494,12 @@ app.on('activate', () => {
       autoUpdater.checkForUpdatesAndNotify();
     }
   }
+})
+
+app.on('close', () => {
+  server.close(() => {
+    console.log('server closed')
+  })
 })
   
 app.on('window-all-closed', () => {

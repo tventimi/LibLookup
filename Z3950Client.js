@@ -9,6 +9,7 @@ const USMARC_OBJID = '1.2.840.10003.5.10'
 const UTF8_OBJID = '1.2.840.10003.15.3'
 const UCS_OBJID = [0x28, 0xD3, 0x16, 0x01, 0x00, 0x08]
 const timeout = 120000 //2 minutes
+const intervalLength = 100
 
 export class Z3950Client {
     port = 0
@@ -18,6 +19,12 @@ export class Z3950Client {
     client = null
     resultsets = []
     inSession = false
+    latestQuery = ""
+    latestResultCount = 0
+    latestResponse = null
+    latestError = ""
+    resultSetId = 0
+    awaitingResponse = false
 
     constructor(port, host, database, username, password) {
         this.port = port
@@ -40,23 +47,33 @@ export class Z3950Client {
         return this.inSession && this.client?.readyState === 'open'
     }
 
-    connect(callback) {
-        this.initiateConnection()
+    connect(reconnect = false) {
+        this.latestError = ""
+        if(!reconnect && this.isConnected()) {
+            return true
+        }
+
+        if(this.isConnected()) {
+            this.disconnect()
+        }
+        var success = this.initiateConnection()
+        this.latestQuery = ""
+        
         this.client.on('connect', () => {
             console.log('Connected to ' + this.client.remoteAddress + ':' + this.client.remotePort)
             this.client.setTimeout(timeout)
             var initRequest = createInitRequest(this.username, this.password)
-            this.client.write(new Uint8Array(initRequest.toBER()))
+            this.sendToClient(initRequest)
         })
+        
         this.client.on('data', (data) => {
             this.dataBuffer = Buffer.concat([this.dataBuffer, Buffer.from(data)])
             var response = new asn1js.fromBER(this.dataBuffer)
-            if(response.offset == -1) {
-                callback('waitForData','')
+            if(response.offset == -1) { //message not complete, awaiting more data
                 return
-            } else {
-                this.dataBuffer = Buffer.alloc(0)
-            }
+            } 
+            //otherwise, new message
+            this.dataBuffer = Buffer.alloc(0)
             if(response.result) {
                 var respCode = response.result.idBlock.tagNumber
                 var respValue = ""
@@ -79,7 +96,8 @@ export class Z3950Client {
                                     numResults = numResults*256 
                                     numResults += numResultsArray[j]
                                 }
-                                respValue = numResults
+                                this.latestResultCount = numResults
+                                console.log(this.latestResultCount)
                             }
                         }
                         break;
@@ -99,16 +117,18 @@ export class Z3950Client {
                                 }
                             }
                         }
+                        this.latestResponse = respValue                        
                         break;
                     default:
                         break;
-                }     
-                callback(respType,respValue)   
+                }  
+                this.awaitingResponse = false  
             }                 
         });
         this.client.on('timeout', () => {
             console.log('Socket idle timeout reached. Closing connection.');
             this.inSession = false
+            this.latestError = "timeout"
             this.client.setTimeout(0)
         });
         this.client.on('close', () => {
@@ -119,38 +139,135 @@ export class Z3950Client {
             this.inSession = false
             console.error('Socket error:', err);
             if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
-                callback('error','timeout')
+                this.latestError = "timeout"
             } else {
                 console.error('Other error:', err.message);
-                callback('error',err.message)
+                this.latestError = err.message
             }
             this.client.destroy()
         });
+
+        //wait for response from initRequest, return connection status
+        var interval = setInterval(() => {
+            if(!this.awaitingResponse) {
+                return this.isConnected()
+            }
+        },intervalLength)
+        
     }
 
-    reconnect(callback) {
+    reconnect() {
         console.log('Reconnecting...')
-        this.connect(callback)
+        this.connect(true)
     }
 
     disconnect() {
         this.inSession = false
         console.log(`Closing connection`);
         var closeRequest = createCloseRequest()
-        this.client.write(new Uint8Array(closeRequest.toBER()))
+        this.sendToClient(closeRequest,false)
     }
 
-    query(resultsetid, queryString, details = null) {        
-        console.log(`Sending query '${queryString}' (result set ${resultsetid})`)
-        var searchRequest = createSearchRequest(this.database, resultsetid, queryString, details)
-        this.resultsetid++
-        this.client.write(new Uint8Array(searchRequest.toBER()))
+    sendToClient(request, awaitResponse = true) {
+        this.awaitingResponse = awaitResponse
+        this.client.write(new Uint8Array(request.toBER()))
     }
 
-    getRecords(resultsetid, recno = 1, count = 1) {
-        console.log(`Retrieving ${count} record(s) starting from ${recno}`)
-        var presentRequest = createPresentRequest(resultsetid, recno, count)
-        this.client.write(new Uint8Array(presentRequest.toBER()))
+    query(queryString, startRecord = 1, maximumRecords = 50, details = null) {   
+        console.log(`Sending query '${queryString}'`)
+        return new Promise((resolve) => {            
+            if(this.isConnected()) {
+                this.searchAndPresent(queryString,startRecord,maximumRecords,details).then(recs => {
+                    resolve({numberOfRecords: this.latestResultCount, records: recs})        
+                })
+            } else {
+                this.connect(true)
+                var interval = setInterval(() => {
+                    if(this.isConnected()) {
+                        this.searchAndPresent(queryString,startRecord,maximumRecords,details).then(recs => {
+                            resolve({numberOfRecords: this.latestResultCount, records: recs})        
+                        })  
+                        clearInterval(interval)                
+                    }
+                },intervalLength)
+            } 
+        })
+    }
+
+    calculateResultSetSize(startRecord,maximumRecords) {
+        if(startRecord + maximumRecords - 1 <= this.latestResultCount) {
+            return maximumRecords
+        } else {
+            return (this.latestResultCount % maximumRecords)
+        }
+    }
+
+    searchAndPresent(queryString,startRecord = 1,maximumRecords = 50,details = null) {
+        return new Promise((resolve) => {            
+            if(this.latestQuery == queryString && this.isConnected()) {
+                var expectedResultCount = this.calculateResultSetSize(startRecord,maximumRecords)
+                this.getRecords(startRecord,expectedResultCount).then(recs => {
+                    resolve(recs)
+                })
+            } else {
+                console.log('search')
+                this.resultSetId++
+                var searchRequest = createSearchRequest(this.database,this.resultSetId,queryString,details)
+                this.sendToClient(searchRequest)
+                var interval = setInterval(() => {
+                    if(!this.awaitingResponse) {
+                        clearInterval(interval)
+                        var expectedResultCount = this.calculateResultSetSize(startRecord,maximumRecords)
+                        this.getRecords(startRecord,expectedResultCount).then(recs => {
+                            resolve(recs)
+                        })
+                    }
+                },intervalLength)
+            }
+            this.latestQuery = queryString
+        })
+    }
+
+    getRecords(recno = 1, count= 1) {
+        return new Promise((resolve) => {
+            var allRecords = []
+            var startRecord = recno
+            var expectedResultCount = count
+            var readyForNext = true
+            var done = false
+            var interval = setInterval(() => {
+                if(done) {
+                    clearInterval(interval)
+                    resolve(allRecords)
+                    return
+                }
+                if(!this.awaitingResponse && readyForNext) {
+                    console.log(`Retrieving ${expectedResultCount} record(s) starting from ${startRecord}`)
+                    var presentRequest = createPresentRequest(this.resultSetId, startRecord, expectedResultCount)
+                    this.sendToClient(presentRequest)
+                    readyForNext = false
+                }
+                else if(!this.awaitingResponse) {    
+                    if(this.latestResponse == "" || this.latestError != "") {
+                        done = true
+                    } else {
+                        var marcRecords = this.latestResponse.split("\x1D")
+                        if(marcRecords[marcRecords.length-1] == "") {
+                            marcRecords.pop()       
+                        } 
+                        allRecords.push(...marcRecords)
+
+                        if(allRecords.length < count) {      
+                            startRecord += marcRecords.length
+                            expectedResultCount -= marcRecords.length
+                        } else {
+                            done = true
+                        }
+                        readyForNext = true
+                    }
+                }     
+            },intervalLength)            
+        })
     }
 }
 
@@ -222,7 +339,7 @@ function zQueryToASN1(zQuery) {
     return asn1
 }
 
-function createSearchRequest(database, rsid, queryString, details = null) {
+function createSearchRequest(database,resultSetId,queryString, details = null) {
     var encoder = new TextEncoder()
     var bib1object = new asn1js.ObjectIdentifier({value: BIB1_OBJID})
 
@@ -235,7 +352,7 @@ function createSearchRequest(database, rsid, queryString, details = null) {
         {id: 14, value: 1}, //Large set upper bound
         {id: 15, value: 0}, //Medium set present number
         {id: 16, value: 1}, //Replace indicator
-        {id: 17, value: encoder.encode(rsid)}, //Result set ID
+        {id: 17, value: encoder.encode(resultSetId)}, //Result set ID
         {id: 18, value: [ //Database name(s)
             {id: 105, value: encoder.encode(database)}
         ]},
@@ -249,11 +366,11 @@ function createSearchRequest(database, rsid, queryString, details = null) {
     return req
 }
 
-function createPresentRequest(rsid, recno = 1, count = 1, elementSet = 'F') {
+function createPresentRequest(resultSetId, recno = 1, count = 1, elementSet = 'F') {
     var encoder = new TextEncoder()
     var marcObj = new asn1js.ObjectIdentifier({value: USMARC_OBJID})
     var req = createASN1object({id: 24, value: [
-        {id: 31, value: encoder.encode(rsid)}, //result set ID
+        {id: 31, value: encoder.encode(resultSetId)}, //result set ID
         {id: 30, value: recno}, //starting record number
         {id: 29, value: count},  //number of records to return
         {id: 19, value: [{id: 0, value: encoder.encode(elementSet)}]},
