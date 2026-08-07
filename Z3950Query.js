@@ -29,7 +29,7 @@ export class Z3950Query {
     constructor(query, details = null, isRaw = false) {
         var queryTokens = tokenize(query)        
         if(isRaw){
-            this.rawZ3950toQuery(query)
+            this.rawZ3950toQuery(query,details)
             return
         }
         for(var i = 0; i < queryTokens.length; i += 4) {
@@ -39,10 +39,10 @@ export class Z3950Query {
 
             if(i+3 < queryTokens.length) {
                 this.type = "operator"
-                var operator = queryTokens[i+3].toLowerCase().replace("not","andnot")
+                var operator = queryTokens.at(-4).toLowerCase().replace("not","andnot")
                 this.operator = operators[operator]
-                this.leftOperand = new Z3950Query(queryTokens.slice(0,3).join(" "),details)
-                this.rightOperand =  new Z3950Query(queryTokens.slice(4).join(" "),details)
+                this.leftOperand = new Z3950Query(queryTokens.slice(0,-4).join(" "),details)
+                this.rightOperand =  new Z3950Query(queryTokens.slice(-3).join(" "),details)
                 if(this.leftOperand.type != "empty" && this.rightOperand.type != "empty") {
                     this.queryString = this.leftOperand.queryString + " " + queryTokens[i+3] + " " + this.rightOperand.queryString
                 } else if(this.leftOperand.type == "empty" && this.rightOperand.type == "empty") {
@@ -110,7 +110,7 @@ export class Z3950Query {
         }              
     }
 
-    rawZ3950toQuery(query) {
+    rawZ3950toQuery(query,details) {
         var queryTokens = tokenize(query)
         var isAttribute = false
         for(var i = 0; i < queryTokens.length; i++) {
@@ -122,7 +122,7 @@ export class Z3950Query {
                     this.type = "operand"
                 } else {
                     this.type = "operator"
-                    this.operator = operators[token.substring(1)]
+                    this.operator = operators[token.substring(1).toLowerCase().replace("not","andnot")]
                     this.leftOperand = new Z3950Query(queryTokens.slice(i + 1).join(" "),details,true)
                     this.queryString += " " + this.leftOperand.queryString
                     var lengthSoFar = this.queryString.length
