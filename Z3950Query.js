@@ -27,7 +27,7 @@ export class Z3950Query {
     queryString = ""
 
     constructor(query, details = null, isRaw = false) {
-        var queryTokens = tokenize(query)        
+        var queryTokens = tokenize(query)      
         if(isRaw){
             this.rawZ3950toQuery(query,details)
             return
@@ -69,7 +69,7 @@ export class Z3950Query {
                 }
                 return
             } else {
-                searchTerm = searchTerm.replace(/^\"/, '').replace(/\"$/, '')                
+                searchTerm = searchTerm.replace(/^\"/, '').replace(/\"$/, '').replaceAll("\"\"","\"")                
                 if(searchTerm == "") {
                     this.type = "empty"
                     this.attributes = []
@@ -122,7 +122,7 @@ export class Z3950Query {
                     this.type = "operand"
                 } else {
                     this.type = "operator"
-                    this.operator = operators[token.substring(1).toLowerCase().replace("not","andnot")]
+                    this.operator = operators[token.substring(1).toLowerCase().replace(/^not$/,"andnot")]
                     this.leftOperand = new Z3950Query(queryTokens.slice(i + 1).join(" "),details,true)
                     this.queryString += " " + this.leftOperand.queryString
                     var lengthSoFar = this.queryString.length

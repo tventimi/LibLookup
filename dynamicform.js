@@ -30,6 +30,7 @@ document.getElementById("submit").addEventListener("click", function(event) {
 document.getElementById("addTermButton").addEventListener("click", addTerm);
 function addTerm() {
     var term = document.getElementById("queryTerm").value;
+    term = term.replace(/^\"/,"").replace(/\"$/,"")
     if(term === "") {
         return;
     }
@@ -86,6 +87,7 @@ function deleteTerm() {
 document.getElementById("clearTermsButton").addEventListener("click", clearTerms);
 function clearTerms() {
     document.getElementById("searchTerms").innerHTML = '';
+    document.getElementById("operator").disabled = true;
     document.getElementById("deleteTermButton").disabled = true;
     document.getElementById("clearTermsButton").disabled = true;
     updateQueryString()
