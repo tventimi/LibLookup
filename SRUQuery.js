@@ -12,8 +12,8 @@ var indexes = {
 }
 
 var relators = {
-    '=': "all",
-    '==': "="
+    'all': "all",
+    '=': "="
 }
 
 export class SRUQuery {

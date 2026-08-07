@@ -97,7 +97,6 @@ export class Z3950Client {
                                     numResults += numResultsArray[j]
                                 }
                                 this.latestResultCount = numResults
-                                console.log(this.latestResultCount)
                             }
                         }
                         break;

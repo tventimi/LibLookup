@@ -94,7 +94,7 @@ export class Z3950Query {
                         useAttribute = details.recnoIndex
                     }
                     this.attributes = [{type: 1, value: useAttribute}]
-                    if(relator == "==") {
+                    if(relator == "=") {
                         this.attributes.push({type: 4, value: 1})
                     } else if(details?.defaultStructure) {
                         this.attributes.push({type: 4, value: details.defaultStructure})
