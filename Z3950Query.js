@@ -14,6 +14,7 @@ const indexes = {
     'isbn': 7,
     'issn': 8,
     'date': 31,
+    'lang': 54,
     'recno': 12
 }
 

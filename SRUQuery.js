@@ -8,6 +8,7 @@ var indexes = {
     "subject": "alma.subjects",
     "isbn": "alma.isbn",
     "issn": "alma.issn",
+    "lang": "alma.language",
     "date": "alma.date_of_publication"
 }
 
