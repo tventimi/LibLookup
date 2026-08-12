@@ -11,7 +11,7 @@ select {
     max-width: 100%;
 }
 
-.scroll-container {
+.scroll-container select {
     overflow-x: auto;
 }
 

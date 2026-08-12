@@ -70,7 +70,10 @@ export class Z3950Query {
                 }
                 return
             } else {
-                searchTerm = searchTerm.replace(/^\"/, '').replace(/\"$/, '').replaceAll("\"\"","\"")                
+                if(searchTerm.match(/^\".*\"$/)) {
+                    searchTerm = searchTerm.replace(/^\"/,'').replace(/\"$/,'')
+                }
+                searchTerm = searchTerm.replaceAll("\"\"","\"")
                 if(searchTerm == "") {
                     this.type = "empty"
                     this.attributes = []
@@ -151,7 +154,9 @@ export class Z3950Query {
                     if(this.attributes.length == 0) {
                         this.attributes.push({type: 1, value: 1016})
                     }
-                    this.term = token.replace(/^\"/, '').replace(/\"$/, '')
+                    if(token.match(/^\".*\"$/)) {
+                        this.term = token.replace(/^\"/, '').replace(/\"$/, '')
+                    }
                     break
                 }
             }

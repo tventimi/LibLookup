@@ -30,7 +30,10 @@ export class SRUQuery {
                 this.queryString += " "
             }
             if(index == "raw") {
-                searchTerm = searchTerm.replace(/^\"/,'').replace(/\"$/,'')
+                if(searchTerm.match(/^\".*\"$/)) {
+                    searchTerm = searchTerm.replace(/^\"/,'').replace(/\"$/,'')
+                }
+                searchTerm = searchTerm.replaceAll("\"\"","\"")                
                 this.queryString += "(" + searchTerm + " )"
             } else {
                 this.queryString += "(" + indexes[index] + " " + relators[relator] + " " + searchTerm + " )" 

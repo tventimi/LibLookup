@@ -15,14 +15,15 @@ queryTerm.addEventListener("input", function(event) {
     updateBatchMode()
 });
 
-document.getElementById("submit").addEventListener("click", function(event) {   
+document.getElementById("submit").addEventListener("click", function(event) {       
+    document.getElementById("catalogLink").innerHTML = ""
     if(document.getElementById("searchTerms").length == 0) {
         if(document.getElementById("queryTerm").value == "") {
             document.getElementById("resultCount").innerHTML = "Please enter a search term."
             event.preventDefault()
             return
         } else {
-            addTerm()
+            addTerm()            
         }
     }
 })
@@ -30,7 +31,10 @@ document.getElementById("submit").addEventListener("click", function(event) {
 document.getElementById("addTermButton").addEventListener("click", addTerm);
 function addTerm() {
     var term = document.getElementById("queryTerm").value;
-    term = term.replace(/^\"/,"").replace(/\"$/,"")
+    term = decodeURIComponent(term)
+    if(term.match(/^\".*\"$/)) {
+        term = term.replace(/^\"/,"").replace(/\"$/,"")
+    }
     if(term === "") {
         return;
     }
@@ -59,8 +63,11 @@ function deleteTerm() {
     var searchTerms = document.getElementById("searchTerms")
     var queryTerm = searchTerms.options[searchTerms.selectedIndex].value
     var queryTokens = tokenize(queryTerm)
-    console.log(queryTokens)
-    document.getElementById("queryTerm").value = queryTokens.pop().replaceAll("\"\"","\"").replace(/^\"/,'').replace(/\"$/,'')
+    var queryTerm = queryTokens.pop() 
+    if(queryTerm.match(/^\".*\"$/)) {
+        queryTerm = queryTerm.replace(/^\"/,'').replace(/\"$/,'')
+    }
+    document.getElementById("queryTerm").value = queryTerm.replaceAll("\"\"","\"")
     document.getElementById("relator").value = queryTokens.pop()
     document.getElementById("index").value = queryTokens.pop()
     document.getElementById("addTermButton").disabled = false

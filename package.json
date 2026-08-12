@@ -1,6 +1,6 @@
 {
   "name": "LibLookup",
-  "version": "0.0.7-alpha",
+  "version": "0.0.8-alpha",
   "description": "Connect to various library catalogs",
   "main": "main.js",
   "scripts": {

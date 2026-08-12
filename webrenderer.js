@@ -5,6 +5,9 @@ const queryForm = document.getElementById("queryForm")
 const inputs = queryForm.querySelectorAll('select, input');
 
 window.addEventListener('DOMContentLoaded', () => {
+  if(urlParams.size == 0) {
+    return
+  }
   inputs.forEach(input => {
     if(input.id === "queryTerm" || input.id === "searchTerms") {
         return
@@ -80,7 +83,7 @@ function download(format) {
     var queryString = window.location.search
     var downloadStatus = document.getElementById('downloadStatus')
     document.getElementById("abortButton").disabled = false    
-    downloadStatus.innerHTML = ""
+    downloadStatus.innerHTML = "Downloading..."
     abort = false
     queryString = queryString.replace(/&start=[0-9]+/,'')
     queryString = queryString.replace(/&maxRecs=[0-9]+/,'')

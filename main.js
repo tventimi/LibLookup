@@ -41,6 +41,7 @@ var displayFields = []
 
 var catalogs = null
 var catalogID = ""
+var catalogLink = ""
 var startAtRecord = 1
 var expectedResultCount = defaultPageSize
 var win
@@ -123,6 +124,7 @@ const createWindow = () => {
           
           var outputDoc = cheerio.load(data.toString())
           var catalog = url.searchParams.get('catalog')
+          catalogLink = ""
           var query = decodeURIComponent(url.searchParams.get('q'))
           var singleRecord = (url.searchParams.get('singleRecord') == 'true')
           var format = url.searchParams.get('format') || 'html'
@@ -196,15 +198,24 @@ const createWindow = () => {
                 serverReady = true
               } else {              
                 outputDoc('#resultsPanel').removeClass('hidden')
+                if(catalogs[catalog].resultFormat == 'json') {
+                  outputDoc('#downloadMRC').addClass('hidden')
+                }
                 if(singleRecord) {   
                   if(format == 'html') {
                     outputDoc('#downloadCSV').addClass('hidden')    
                     outputDoc('#abortButton').addClass('hidden')   
-                    outputDoc('#downloadStatus').addClass('hidden')                
-                    outputDoc('#results').append(renderMARC(results[0]))
+                    outputDoc('#downloadStatus').addClass('hidden')
+                    var output = (catalogs[catalog].resultFormat == 'json') ? 
+                      '<pre>' + JSON.stringify(results[0],null,2) + "</pre>" : 
+                      renderMARC(results[0])             
+                    outputDoc('#results').append(output)
                     return
                   } 
-                } 
+                }                 
+                if(catalogLink != "") {
+                  outputDoc('#catalogLink').append(`<a target="_blank" href="${catalogLink}">View in Catalog</a>`)
+                }
                 var navbar = outputDoc("#navigation")
                 if(startAtRecord > 1) {
                   var prevURL = new URL(url)
@@ -223,10 +234,15 @@ const createWindow = () => {
                   })
                   outputDoc('#results').append(rawMRC)
                 } else {
+                  var recIdField = (catalogs[catalog].resultFormat == 'json') ? catalogs[catalog].recIdField : '001'
                   var resultsTable = results.map(rec => {
-                    return filterRecordFields(rec,['001',...displayFields])
+                    if(catalogs[catalog].resultFormat == 'json') {
+                      return filterJSONRecord(rec,[recIdField,...displayFields],catalogs[catalog].resultFields) 
+                    } else {
+                      return filterRecordFields(rec,[recIdField,...displayFields])
+                    }
                   })
-                  outputDoc('#results').append(renderRecords([['001',...displayFields],...resultsTable],format))                    
+                  outputDoc('#results').append(renderRecords([[recIdField,...displayFields],...resultsTable],format))
                 }
               }
             },
@@ -247,9 +263,14 @@ const createWindow = () => {
           )
           if(singleRecord && displayResults.length > 0) {
             displayResults = latestResults.filter((rec) => {
-              return rec.get('001').length > 0 && 
-                    rec.get('001')[0].value.includes(decodeURIComponent(query)
-                      .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
+              if(catalogs[catalog].resultFormat == 'json') {
+                return Object.hasOwn(rec,'id') && rec.id.includes(decodeURIComponent(query)
+                        .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
+              } else {
+                return rec.get('001').length > 0 && 
+                      rec.get('001')[0].value.includes(decodeURIComponent(query)
+                        .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
+              }       
             })
             if(displayResults.length == 1) {
               resultsStream.next([displayResults[0]])
@@ -270,9 +291,13 @@ const createWindow = () => {
                   if(calculateCount) {
                     latestResultCount = results.numberOfRecords
                   }
+                  catalogLink = customClient.getCatalogLink()
                   latestQuery = query
                   for(var i = 0; i < results.records.length; i++) {
-                    var rec = Marc.parse(results.records[i],'marcxml')                  
+                    var rec = results.records[i]
+                    if(catalogs[catalog].resultFormat != 'json') {
+                      rec = Marc.parse(results.records[i],'marcxml')
+                    }                  
                     latestResults.push(rec)
                     displayResults.push(rec)          
                   }                   
@@ -361,6 +386,33 @@ app.whenReady().then(() => {
   } 
 })
 
+function filterJSONRecord(jsonRecord,fields = [],mapping = []) {
+  var filteredFields = []
+  const getValueByPath  = (obj, jsonPath)  => {
+    const [path,regex] = jsonPath.split("/")
+    var val = path.split('.').reduce((acc, part) => acc && acc[part], obj);
+    if(val && regex) {
+      var m = JSON.stringify(val).matchAll(new RegExp(`\"${regex}\":\"([^\"]*)\"`,'g'))
+      val = [...m].map(match => match[1])
+    }
+    return (val ?? "")
+  }
+  if(fields.length > 0) {
+    for(var i = 0; i < fields.length; i++) {
+      var fi = fields[i].toLowerCase()
+      fi = Object.hasOwn(mapping,fi) ? mapping[fi] : fi
+      var val = getValueByPath(jsonRecord,fi) ?? ""      
+      if(Array.isArray(val)) {
+        val = val.join("\xA6")
+      }
+      if(typeof val == 'object') {
+        val = JSON.stringify(val)
+      }
+      filteredFields.push(val)
+    }
+  }
+  return filteredFields
+}
 
 function filterRecordFields(marc, fields = []) {
   var filteredFields = []
@@ -423,7 +475,7 @@ function renderRecords(records,format = 'html') {
   } else if (format == 'html') {
     if(records[0].length > 6) {
       for(var i = 1; i < records.length; i++) {
-        rendered += `<div><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
+        rendered += `<div class='viewlink'><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
               `&q=recno+%3D+%22${records[i][0]}%22&displayFields=${displayFields}'>View Full Record</a></div>`
         rendered += "<table class='marc'>"
         records[i] = records[i].map(rec => escapeHtml(rec))
