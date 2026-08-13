@@ -5,3 +5,4 @@ out/
 config/*
 dist/*
 customSign.cjs
+forge.macsigning.txt
