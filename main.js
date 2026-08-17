@@ -18,6 +18,7 @@ import * as cheerio from 'cheerio'
 import { start } from 'node:repl';
 import autoUpdaterPkg from 'electron-updater';
 import { JSONPath } from 'jsonpath-plus'
+import { decode } from 'html-entities';
 const { autoUpdater } = autoUpdaterPkg;
 
 
@@ -496,7 +497,7 @@ function renderRecords(records,format = 'html') {
       rendered = rendered.replaceAll("\xA6","<br/>")
     }
   }
-  return rendered
+  return decode(rendered)
 }
 
 function renderMARC(marc) {

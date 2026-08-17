@@ -105,6 +105,7 @@ function updateQueryString() {
     var options = Array.from(document.getElementById("searchTerms").options)
     var queryString = options.map(option => option.value).join(" ")
     document.getElementById("queryString").value = queryString; 
+    console.log(queryString)
 }
 
 function updateBatchMode() {

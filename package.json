@@ -30,6 +30,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.8.9",
     "express": "^5.2.1",
+    "html-entities": "^2.6.0",
     "jsonpath-plus": "^10.4.0",
     "localtunnel": "^2.0.2",
     "marcjs": "^3.0.2",

@@ -24,7 +24,7 @@ export class CustomClient {
     }
 
     async query(queryString, startRecord = 1, maximumRecords = 50, getTotalCount = true) {
-        var totalRecords = null        
+        var totalRecords = null     
         const customQuery = new CustomQuery(queryString,this.config)
         if(Object.hasOwn(this.config,'catalogLinkUrl')) {
             this.catalogLink = this.config.catalogLinkUrl
@@ -78,7 +78,6 @@ export class CustomClient {
         if(this.config.recordsField) {
             const recordsPath = this.config.recordsField.replace(/^json:/, '') 
             recordsArray = JSONPath({path: recordsPath, json: JSON.parse(recordsText)})[0]
-         console.log(recordsArray.length)
             if(!Array.isArray(recordsArray)) {
                 recordsArray = [recordsArray]
             }
@@ -109,7 +108,7 @@ export class CustomClient {
                 records = xpath.select('//marc:record', responseXML)
             }
             records = records.map(record => record.toString().replaceAll(/<datafield ([^>]*) (tag=\"...\")/g,'<datafield $2 $1'))
-        
+
             return {numberOfRecords: totalRecords, records: records}
         }
     }    
