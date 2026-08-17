@@ -459,7 +459,7 @@ function filterRecordFields(marc, fields = []) {
 function renderRecords(records,format = 'html') {
   var rendered = ""
   if(format == 'json') {
-    var recordsAndCount = {numberOfRecords: latestResultCount, records: records}
+    var recordsAndCount = {numberOfRecords: latestResultCount, catalogLink: catalogLink, records: records}
     if(startAtRecord + resultsPerPage < latestResultCount) {
       recordsAndCount.nextRecordPosition = startAtRecord + resultsPerPage
     }    
@@ -496,8 +496,9 @@ function renderRecords(records,format = 'html') {
       rendered += "</table>"
       rendered = rendered.replaceAll("\xA6","<br/>")
     }
+    rendered = decode(rendered)
   }
-  return decode(rendered)
+  return rendered
 }
 
 function renderMARC(marc) {
