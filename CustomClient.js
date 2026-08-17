@@ -1,6 +1,7 @@
 import { CustomQuery } from './CustomQuery.js'
 import { DOMParser } from 'xmldom'
 import * as xpath from 'xpath'
+import { JSONPath } from 'jsonpath-plus'
 
 
 
@@ -34,9 +35,6 @@ export class CustomClient {
                 this.catalogLink += encodeURIComponent(customQuery.queryString)
             }
         } 
-        const getValueByPath  = (obj, jsonPath)  => {
-            return jsonPath.split('.').reduce((acc, part) => acc && acc[part], obj);
-        }
         if(getTotalCount) {
             var countUrl = this.config.resultCountBaseUrl 
             if(customQuery.isCatalogLink) {
@@ -50,10 +48,9 @@ export class CustomClient {
             const countResponse = await fetch(countUrl)
             const countText = await countResponse.text()
             if(this.config.resultCountField.startsWith("json:")) {
-                const jsonPath = this.config.resultCountField.replace(/^json:/, '')                
-                totalRecords = getValueByPath(JSON.parse(countText), jsonPath)   
+                const countPath = this.config.resultCountField.replace(/^json:/, '')                
+                totalRecords = JSONPath({path: countPath, json: JSON.parse(countText)})[0]   
             }
-
         }
 
         var pageno = Math.ceil(startRecord / maximumRecords)
@@ -79,17 +76,18 @@ export class CustomClient {
         const parser = new DOMParser();
 
         if(this.config.recordsField) {
-            const jsonPath = this.config.recordsField.replace(/^json:/, '') 
-            recordsArray = getValueByPath(JSON.parse(recordsText),jsonPath)
+            const recordsPath = this.config.recordsField.replace(/^json:/, '') 
+            recordsArray = JSONPath({path: recordsPath, json: JSON.parse(recordsText)})[0]
+         console.log(recordsArray.length)
             if(!Array.isArray(recordsArray)) {
                 recordsArray = [recordsArray]
             }
             if(this.config.wrappers) {
                 for(var i = 0; i < this.config.wrappers.length; i++) {
                     var wrapper = this.config.wrappers[i]
-                    if(wrapper.startsWith("json:")) {
-                        const wrapperPath = wrapper.replace(/^json:/, '')   
-                        recordsArray = recordsArray.map((rec) => { return getValueByPath(rec, wrapperPath)})
+                    if(wrapper.startsWith("json:")) { 
+                        const wrapperPath = wrapper.replace(/^json:/, '')  
+                        recordsArray = recordsArray.map((rec) => { return JSONPath({options:{wrap:false},path:wrapperPath,json:rec})[0] }) 
                     }
                 }
             }

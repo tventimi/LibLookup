@@ -1,6 +1,6 @@
 {
   "name": "LibLookup",
-  "version": "0.0.8-alpha",
+  "version": "0.0.9-alpha",
   "description": "Connect to various library catalogs",
   "main": "main.js",
   "scripts": {
@@ -30,6 +30,7 @@
     "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.8.9",
     "express": "^5.2.1",
+    "jsonpath-plus": "^10.4.0",
     "localtunnel": "^2.0.2",
     "marcjs": "^3.0.2",
     "marcrecord": "^1.4.0",

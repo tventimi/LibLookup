@@ -17,7 +17,9 @@ import { stringify } from 'csv/sync'
 import * as cheerio from 'cheerio'
 import { start } from 'node:repl';
 import autoUpdaterPkg from 'electron-updater';
+import { JSONPath } from 'jsonpath-plus'
 const { autoUpdater } = autoUpdaterPkg;
+
 
 if (started) app.quit();
 
@@ -388,20 +390,11 @@ app.whenReady().then(() => {
 
 function filterJSONRecord(jsonRecord,fields = [],mapping = []) {
   var filteredFields = []
-  const getValueByPath  = (obj, jsonPath)  => {
-    const [path,regex] = jsonPath.split("/")
-    var val = path.split('.').reduce((acc, part) => acc && acc[part], obj);
-    if(val && regex) {
-      var m = JSON.stringify(val).matchAll(new RegExp(`\"${regex}\":\"([^\"]*)\"`,'g'))
-      val = [...m].map(match => match[1])
-    }
-    return (val ?? "")
-  }
   if(fields.length > 0) {
     for(var i = 0; i < fields.length; i++) {
       var fi = fields[i].toLowerCase()
       fi = Object.hasOwn(mapping,fi) ? mapping[fi] : fi
-      var val = getValueByPath(jsonRecord,fi) ?? ""      
+      var val = JSONPath({path:fi, json:jsonRecord})[0] ?? ""      
       if(Array.isArray(val)) {
         val = val.join("\xA6")
       }
