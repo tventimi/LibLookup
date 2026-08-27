@@ -8,8 +8,8 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "ship": "electron-builder build --publish always",
-    "preship": "electron-builder build --publish never"
+    "build": "electron-builder build --publish never",
+    "ship": "electron-builder build --publish always"
   },
   "author": "Thomas Ventimiglia",
   "license": "Apache-2.0",
