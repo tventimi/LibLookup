@@ -571,7 +571,6 @@ function renderRecords(records,format = 'html') {
       rendered = rendered.replaceAll("\xA6","<br/>")
     }    
   }
-  rendered = decode(rendered)
   return rendered
 }
 

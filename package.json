@@ -60,7 +60,10 @@
       "artifactName": "LibLookup-Windows-Setup-${version}.${ext}"
     },
     "mac": {
-      "target": ["dmg","zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "images/LL-icon.icns",
       "notarize": true,
       "category": "public.app-category.utilities",
