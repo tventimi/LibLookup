@@ -650,9 +650,7 @@ app.on('window-all-closed', () => {
   if(z3950client?.isConnected()) {
     z3950client.disconnect()
   }
-  if (process.platform == 'darwin') {
-    app.quit()
-  }
+  app.quit()
 })
 
 ipcMain.on('button-clicked', (event) => {
