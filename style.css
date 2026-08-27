@@ -2,7 +2,14 @@ html {
   color-scheme: light dark;
 }
 
+* {
+    box-sizing: border-box;
+}
+
 body {
+    height: 100vh;
+    font-family: sans-serif;
+    overflow: hidden; /* Critical: locks the main page background */
     font-family: sans-serif;
 }
 
@@ -17,18 +24,14 @@ body {
 }
 
 .sidebar {
-    width: 250px;
-    position: fixed;
+    width: 275px;
+    flex-shrink: 0;
+    overflow-y: auto
 }
 
 .container {
-    display: flex
-}
-
-#settingsPanel {
-    flex: 1;
-    padding: 20px;
-    margin-left: 200px;
+    display: flex;
+    height: 100vh;
 }
 
 #catalogList {
@@ -38,7 +41,7 @@ body {
 #resultsPanel {
     flex: 1;
     padding: 20px;
-    margin-left: 250px;
+    overflow-y: auto;
 }
 
 #appTitle tr {

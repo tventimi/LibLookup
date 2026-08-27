@@ -9,14 +9,14 @@ const sruNamespaces = {
 
 export class SRUClient {
 
-    baseurl = ""
-    constructor(baseurl) {
-        this.baseurl = baseurl   
+    config = ""
+    constructor(config) {
+        this.config = config
     }
 
     async connect() {
-        const explainResponse = await fetch(this.baseurl + "?version=1.2&operation=explain")
-        console.log("Connecting to SRU catalog at " + this.baseurl)
+        const explainResponse = await fetch(this.config.baseurl + "?version=1.2&operation=explain")
+        console.log("Connecting to SRU catalog at " + this.config.baseurl)
         const explainText = await explainResponse.text()
         return explainText.includes("explainResponse")
     }
@@ -24,7 +24,7 @@ export class SRUClient {
     async query(queryString, startRecord = 1, maximumRecords = 50) {
         const sruQuery = new SRUQuery(queryString)
         console.log("SRU query: " + sruQuery.queryString)
-        const queryURL = this.baseurl + "?version=1.2&operation=searchRetrieve&query=" + 
+        const queryURL = this.config.baseurl + "?version=1.2&operation=searchRetrieve&query=" + 
             encodeURIComponent(sruQuery.queryString) + "&startRecord=" + startRecord + "&maximumRecords=" + maximumRecords
         console.log(queryURL)
         const queryResponse = await fetch(queryURL)

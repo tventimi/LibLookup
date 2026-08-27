@@ -18,22 +18,18 @@
     <div class="container">
       <div class="sidebar">
         <table id="appTitle"><tr>
-      <td><a href="https://localhost:3950/">
-        <img title='LibLookup' src='images/LL-icon.png' width="50"/>
-      </a></td>
-      <td>&nbsp;&nbsp;</td>
-      <td><h2>LibLookup</h2></td>
-    </tr></table> 
+          <td><a href="https://localhost:3950/">
+            <img title='LibLookup' src='images/LL-icon.png' width="50"/>
+          </a></td>
+          <td>&nbsp;&nbsp;</td>
+          <td><h2>LibLookup</h2></td>
+        </tr></table> 
         <form id="queryForm">
           <link rel="stylesheet" href="./formstyle.css" type="text/css"/>
-          <div>
-            <label for="catalog">Catalog:</label>
-          </div>
           <div>
             <select title="Catalog" name="catalog" id="catalog"></select>
           </div>
           <div>
-            <label for="q">Query:</label>
             <span class='plugin-only batch' id="batchrows">rows 
               <input class="rownum" name="startrow" title="startrow" id="startrow" type="number" min=1 step=1 value="1"/>
               to
@@ -41,28 +37,15 @@
               <button class="plugin-only" type="button" id="allRowsButton">All</button>
             </span>
           </div>
-          <div>
+          <div class="menuBar">
             <select title="operator"  id="operator" disabled>
               <option value="and">AND</option>
               <option value="or">OR</option>
               <option value="not">NOT</option>
             </select> 
-            <select title="index" id="index">
-              <option value="keyword">Keyword</option>
-              <option value="title">Title</option>
-              <option value="author">Author</option>
-              <option value="subject">Subject</option>
-              <option value="isbn">ISBN</option>
-              <option value="issn">ISSN</option>
-              <option value="date">Date</option>
-              <option value="lang">Language</option>
-              <option value="recno">Record #</option>
-              <option value="raw">Raw Query</option>
-              <option value="link">Catalog Link</option>
+            <select title="index" id="index">              
             </select>
             <select title="relator" id="relator">
-              <option value="all">has all</option>
-              <option value="=">phrase</option>
             </select>
           </div>
           <div>
@@ -84,20 +67,28 @@
           </div> 
           <div class="scroll-container">
             <select title="searchTerms" id="searchTerms" size="3"></select>
-          </div>          
+          </div>       
           <div>
-          <label for="displayFields">Fields:</label>
-          </div>
-          <div>
+            <div>Display Fields:</div>
+            <select title="resultField" id="resultField">
+            </select> 
+            <input title="customResultField" id="customResultField" size="10" disabled/>
             <input 
-              title="Display fields" 
-              placeholder='e.g. 100,245' 
-              type="text" 
+              type="hidden"
               id="displayFields"
               name="displayFields"
-              value="100,245"
             />
-          </div>            
+          </div>
+          <div>
+            <button type="button" id="addResultButton">Add</button>
+            <button type="button" id="deleteResultButton" disabled>Delete</button>
+            <button type="button" id="clearResultsButton" disabled>Clear</button>
+            <button type="button" id="moveUpButton" disabled>Up</button>
+            <button type="button" id="moveDownButton" disabled>Down</button>
+          </div> 
+          <div class="scroll-container">
+            <select title="resultFieldsList" id="resultFieldsList" size="3"></select>
+          </div>                   
           <div class='plugin-only'>
             <label for='maxRecs'>Maximum records:</label>
             <input 
@@ -123,11 +114,22 @@
           <div>
             <button id="submit" type="submit">Search</button>
             <button class="plugin-only" type="button" id="abortButton" disabled>Abort</button>
+            <span id="catalogLink">          
+            </span>
           </div>
-          <script src ="./dynamicform.js" type="application/javascript"></script>
-        </form>
-        <div id="catalogLink">          
-        </div>
+          <dialog id="secondaryIndexDialog">
+            <h4>Additional Indexes</h4>       
+              <div>
+                <select id="secondaryIndexList" size="10">              
+                </select>
+              </div>
+              <div class="dialogFilter">Filter: <input id="secondaryIndexFilter"></input></div>
+              <button type="button" id="submitSecondaryIndexDialog">Select</button>
+              <button type="button" id="closeSecondaryIndexDialog">Cancel</button>
+          </dialog>
+          <script id="menumap" type="application/json"></script>
+          <script defer src ="./dynamicform.js" type="application/javascript"></script>
+        </form>        
       </div>
       <div id="resultsPanel" class="hidden">
         <div id='resultCount'></div>

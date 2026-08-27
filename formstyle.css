@@ -13,9 +13,6 @@ select {
 
 .scroll-container select {
     overflow-x: auto;
-}
-
-#searchTerms {        
     min-width: 100%; 
 }
 
@@ -25,4 +22,30 @@ select {
 
 .rownum {
     width: 50px;
+}
+
+#secondaryIndexDialog select {
+    overflow-x: auto;
+    min-width: 225px;
+    width: 225px;
+}
+
+.dialogFilter * {
+    width:100%
+}
+
+#index {
+    text-overflow: ellipsis;
+    max-width: 125px;
+    width: 125px
+}
+
+#resultField {
+    text-overflow:ellipsis;
+    max-width:125px;
+    width:125px
+}
+
+.menuBar {
+    white-space: nowrap;
 }
