@@ -3,6 +3,8 @@ OLD/*
 webserver/
 out/
 config/*
-dist/*
+dist/
+*.sh
 customSign.cjs
 forge.macsigning.txt
+build/entitlements.mac.plist

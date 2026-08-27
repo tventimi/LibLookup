@@ -4,7 +4,20 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
-    icon: 'images/LL-icon'
+    icon: 'images/LL-icon',
+    osxSign: {
+      identity: 'Developer ID Application: Princeton University (Y3TW367T4G)',
+      optionsForFile: (filePath) => {
+        return {
+          hardenedRuntime: true
+        };
+      }
+    },
+    osxNotarize: {
+      appleId: process.env.APPLE_ID,
+      appleIdPassword: process.env.APPLE_APP_PASSWORD,
+      teamId: process.env.APPLE_TEAM_ID
+    }
   },
   rebuildConfig: {},
   makers: [

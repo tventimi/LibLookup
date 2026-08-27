@@ -1,6 +1,6 @@
 {
   "name": "LibLookup",
-  "version": "0.0.8-alpha",
+  "version": "0.0.9-alpha",
   "description": "Connect to various library catalogs",
   "main": "main.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "ship": "electron-builder build --publish always"
+    "ship": "electron-builder build --publish always",
+    "preship": "electron-builder build --publish never"
   },
   "author": "Thomas Ventimiglia",
   "license": "Apache-2.0",
@@ -39,7 +40,7 @@
   },
   "type": "module",
   "build": {
-    "appId": "com.example.myapp",
+    "appId": "edu.princeton.liblookup",
     "publish": [
       {
         "provider": "github",
@@ -58,6 +59,16 @@
       "differentialPackage": false,
       "createDesktopShortcut": true,
       "artifactName": "LibLookup-Windows-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": ["dmg","zip"],
+      "icon": "images/LL-icon.icns",
+      "notarize": true,
+      "category": "public.app-category.utilities",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     }
   }
 }
