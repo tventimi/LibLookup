@@ -9,12 +9,7 @@ var indexes = {
     "isbn": "alma.isbn",
     "issn": "alma.issn",
     "lang": "alma.language",
-    "date": "alma.date_of_publication"
-}
-
-var relators = {
-    'all': "all",
-    '=': "="
+    "date": "alma.main_pub_date"
 }
 
 export class SRUQuery {
@@ -36,7 +31,8 @@ export class SRUQuery {
                 searchTerm = searchTerm.replaceAll("\"\"","\"")                
                 this.queryString += "(" + searchTerm + " )"
             } else {
-                this.queryString += "(" + indexes[index] + " " + relators[relator] + " " + searchTerm + " )" 
+                const mappedIndex = Object.hasOwn(indexes,index) ? indexes[index] : index
+                this.queryString += "(" + mappedIndex + " " + relator + " " + searchTerm + " )" 
             }
             if(i+3 < queryTokens.length) {
                 this.queryString += " " + queryTokens[i+3]

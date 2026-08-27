@@ -9,7 +9,11 @@ export class CustomQuery {
     constructor(queryString,config) {
         var queryTokens = tokenize(queryString)
         if(config.indexes) {
-            this.indexes = config.indexes
+            config.indexes.forEach(entry => {
+                if(Object.hasOwn(entry,"code") && Object.hasOwn(entry, "paramName")) {
+                    this.indexes[entry.code] = entry.paramName
+                }
+            })
         }
         if(config.relators) {
             this.relators = config.relators
@@ -42,8 +46,10 @@ export class CustomQuery {
                 }
                 searchTerm = searchTerm.replaceAll("\"\"","\"")
             }
-            if(Object.hasOwn(this.indexes,index) && Object.hasOwn(this.relators,relator)) {
-                this.queryString += this.indexes[index] + this.relators[relator] + searchTerm
+            const mappedRelator = Object.hasOwn(this.relators,relator) ? this.relators[relator] : this.relators['default'] 
+
+            if(Object.hasOwn(this.indexes,index)) {
+                this.queryString += this.indexes[index] + mappedRelator + searchTerm
             } else {
                 this.queryString += searchTerm 
             }

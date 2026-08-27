@@ -4,22 +4,16 @@ var abort = false
 const queryForm = document.getElementById("queryForm")
 const inputs = queryForm.querySelectorAll('select, input');
 
-window.addEventListener('DOMContentLoaded', () => {
-  if(urlParams.size == 0) {
+populateForm()
+
+function populateForm() {
+  if(urlParams.size == 0) { //start page, clear all saved values
+    inputs.forEach(input => {
+        localStorage.setItem(input.id,"")
+    })
     return
-  }
-  inputs.forEach(input => {
-    if(input.id === "queryTerm" || input.id === "searchTerms") {
-        return
-    }
-    const savedValue = localStorage.getItem(input.id);
-    if (savedValue) {
-      input.value = savedValue;
-    }
-    if(input.value == "" && input.nodeName == "SELECT") {
-      input.value = input.options[0].value;
-    }
-  });
+  } 
+  //else if there are URL params  
   urlParams.forEach((value, key) => {
     if(key === "catalog") {
         document.getElementById("catalog").value = value
@@ -30,9 +24,6 @@ window.addEventListener('DOMContentLoaded', () => {
         var queryString = decodeURIComponent(value)
         var queryTokens = tokenize(queryString)
         for(var i = 0; i < queryTokens.length; i += 3) {
-            document.getElementById("deleteTermButton").disabled = false
-            document.getElementById("clearTermsButton").disabled = false
-            document.getElementById("operator").disabled = false
             if(i == 0) {
                 searchTerms.add(new Option(queryTokens.slice(i,i+3).join(' ')))
             } else {
@@ -40,17 +31,58 @@ window.addEventListener('DOMContentLoaded', () => {
                 i++
             }
         }
+        document.getElementById("deleteTermButton").disabled = false
+        document.getElementById("clearTermsButton").disabled = false
+        document.getElementById("operator").disabled = false
     } else if(key === "displayFields") {
         document.getElementById("displayFields").value = value
         displayFields = value
+        const resultFieldsList = document.getElementById("resultFieldsList")
+        const fieldList = decodeURIComponent(displayFields).split("|")
+        for(var i = 0; i < fieldList.length; i++) {
+            resultFieldsList.append(new Option(fieldList[i],fieldList[i]))
+        }
+        document.getElementById("deleteResultButton").disabled = false
+        document.getElementById("clearResultsButton").disabled = false
     } 
   });
-});
+}
 
-queryForm.addEventListener('input', (e) => {
-  if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT') {
-    localStorage.setItem(e.target.id, e.target.value);
-  }
+document.addEventListener('DOMContentLoaded',function() {
+    inputs.forEach(input => {
+        if(input.id === "queryTerm" || input.id === "searchTerms" || 
+            input.id === "catalog" || input.id === "displayFields") {
+            return
+        }
+        const savedValue = localStorage.getItem(input.id);
+        if (savedValue) {
+            input.value = savedValue;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        if(input.value == "" && input.nodeName == "SELECT" && input.options.length > 0) {
+            input.value = input.options[0].value;    
+            input.dispatchEvent(new Event('change', { bubbles: true }));        
+            if(input.id == "index" || input.id == "resultField") {
+                const savedContents = localStorage.getItem(input.id + "Contents");
+                input.innerHTML = savedContents
+            }
+        }
+    });
+})
+
+
+queryForm.addEventListener('submit', function(event) {
+    console.log("blah")
+    const formControls = event.target.elements;
+    Array.from(formControls).forEach(element => {
+        if ((element.tagName === 'SELECT' || element.tagName === 'INPUT') 
+                && element != "SECONDARY_INDEX") {
+            localStorage.setItem(element.id, element.value); 
+            if(element.id == "index") {
+                localStorage.setItem(element.id + "Contents", element.innerHTML)
+            }
+        }
+    })
 });
 
 

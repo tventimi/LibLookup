@@ -12,6 +12,8 @@ window.addEventListener('DOMContentLoaded', async () => {
             loadCatalogs()
         } 
     });
+    const version = await window.electronApi.getAppVersion()
+    document.getElementById("versionNumber").innerHTML = `v${version}`
     loadCatalogs()
 });
 

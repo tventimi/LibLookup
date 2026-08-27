@@ -18,6 +18,14 @@ const indexes = {
     'recno': 12
 }
 
+const relators = {
+    '<': 1,
+    '<=': 2,
+    '>': 4,
+    '>=': 5,
+    "<>": 6
+}
+
 export class Z3950Query {
     type = null
     operator = null
@@ -27,10 +35,10 @@ export class Z3950Query {
     term = null
     queryString = ""
 
-    constructor(query, details = null, isRaw = false) {
+    constructor(query, config = null, isRaw = false) {
         var queryTokens = tokenize(query)      
         if(isRaw){
-            this.rawZ3950toQuery(query,details)
+            this.rawZ3950toQuery(query)
             return
         }
         for(var i = 0; i < queryTokens.length; i += 4) {
@@ -42,8 +50,8 @@ export class Z3950Query {
                 this.type = "operator"
                 var operator = queryTokens.at(-4).toLowerCase().replace("not","andnot")
                 this.operator = operators[operator]
-                this.leftOperand = new Z3950Query(queryTokens.slice(0,-4).join(" "),details)
-                this.rightOperand =  new Z3950Query(queryTokens.slice(-3).join(" "),details)
+                this.leftOperand = new Z3950Query(queryTokens.slice(0,-4).join(" "),config)
+                this.rightOperand =  new Z3950Query(queryTokens.slice(-3).join(" "),config)
                 if(this.leftOperand.type != "empty" && this.rightOperand.type != "empty") {
                     this.queryString = this.leftOperand.queryString + " " + queryTokens[i+3] + " " + this.rightOperand.queryString
                 } else if(this.leftOperand.type == "empty" && this.rightOperand.type == "empty") {
@@ -81,7 +89,7 @@ export class Z3950Query {
                 }
                 this.type = "operand"
                 if(index == "raw") {
-                    var zQuery = new Z3950Query(searchTerm,details,true)
+                    var zQuery = new Z3950Query(searchTerm,config.details,true)
                     this.type = zQuery.type
                     this.queryString = zQuery.queryString
                     if(zQuery.type == 'operand') {
@@ -93,18 +101,23 @@ export class Z3950Query {
                         this.rightOperand = zQuery.rightOperand
                     }
                 } else {
-                    var useAttribute = indexes[index]
-                    if(index == "recno" && details?.recnoIndex) {
-                        useAttribute = details.recnoIndex
+                    var useAttribute = Object.hasOwn(indexes, index) ? indexes[index] : parseInt(index)
+                    if(index == "recno" && config.details?.recnoIndex) {
+                        useAttribute = config.details.recnoIndex
                     }
                     this.attributes = [{type: 1, value: useAttribute}]
+
+                    if(Object.hasOwn(relators,relator)) {
+                        this.attributes.push({type:2, value: relators[relator]})
+                    }
+
                     if(relator == "=") {
                         this.attributes.push({type: 4, value: 1})
-                    } else if(details?.defaultStructure) {
-                        this.attributes.push({type: 4, value: details.defaultStructure})
+                    } else if(config.details?.defaultStructure) {
+                        this.attributes.push({type: 4, value: config.details.defaultStructure})
                     }
                     this.term = searchTerm
-                    if(index == "recno" && details?.recnoNumeric) {
+                    if(index == "recno" && config.details?.recnoNumeric) {
                         this.term = this.term.replaceAll(/[^0-9]/g,"")
                     }
                     this.queryString = queryTokens.slice(0,3).join(" ")
@@ -114,7 +127,7 @@ export class Z3950Query {
         }              
     }
 
-    rawZ3950toQuery(query,details) {
+    rawZ3950toQuery(query) {
         var queryTokens = tokenize(query)
         var isAttribute = false
         for(var i = 0; i < queryTokens.length; i++) {
@@ -127,10 +140,10 @@ export class Z3950Query {
                 } else {
                     this.type = "operator"
                     this.operator = operators[token.substring(1).toLowerCase().replace(/^not$/,"andnot")]
-                    this.leftOperand = new Z3950Query(queryTokens.slice(i + 1).join(" "),details,true)
+                    this.leftOperand = new Z3950Query(queryTokens.slice(i + 1).join(" "),config,true)
                     this.queryString += " " + this.leftOperand.queryString
                     var lengthSoFar = this.queryString.length
-                    this.rightOperand =  new Z3950Query(query.substring(lengthSoFar),details,true)
+                    this.rightOperand =  new Z3950Query(query.substring(lengthSoFar),config,true)
                     this.queryString += " " + this.rightOperand.queryString
                     return
                 }

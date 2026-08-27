@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, Menu } from 'electron/main'
 import { Z3950Client } from './Z3950Client.js';
 import { SRUClient } from './SRUClient.js';
 import { CustomClient } from './CustomClient.js';
+import { MenuMap } from './MenuMap.js'
 import { Marc } from 'marcjs'
 import * as readline from 'node:readline';
 import * as fs from 'node:fs';
@@ -41,6 +42,7 @@ var latestResultCount = 0
 var latestResults = []
 var displayResults = []
 var displayFields = []
+var menuMap = {}
 
 var catalogs = null
 var catalogID = ""
@@ -49,6 +51,14 @@ var startAtRecord = 1
 var expectedResultCount = defaultPageSize
 var win
 var z3950client
+
+const defaultResults = [
+    {name:"Record ID",code:"recno",value:"001"},
+    {name:"Title",code:"title",value:"245"},
+    {name:"Author",code:"author",value:"1xx"},
+    {name:"Publication Date",code:"date",value:"26xc"},
+    {name:"Other...",code:"other",value:""}
+]
 
 autoUpdater.autoDownload = false;
 
@@ -124,7 +134,6 @@ const createWindow = () => {
             serverReady = true
             return
           }
-          
           var outputDoc = cheerio.load(data.toString())
           var catalog = url.searchParams.get('catalog')
           catalogLink = ""
@@ -138,17 +147,18 @@ const createWindow = () => {
           resultsPerPage = Math.min(maxRecs,defaultPageSize)
           
           if(submittedDisplayFields) {
-            displayFields = submittedDisplayFields.split(',').map(f => f.trim())
+            displayFields = submittedDisplayFields.split('|').map(f => f.trim())
           } 
   
           if(format == 'html') { 
             if(filename.endsWith('index.html')) {      
-              var catalogHTML = "" 
               var catalogList = outputDoc('#catalog')
               Object.keys(catalogs).forEach((cat) => {
                 const catOption = `<option value='${cat}'>${catalogs[cat].name}</option>`
                 catalogList.append(catOption)
               })
+              var menuJSON = outputDoc('#menumap')
+              menuJSON.append(menuMap.getJSON())
               if(pageType != "plugin") {
                 outputDoc('.plugin-only').remove()
               }             
@@ -160,7 +170,7 @@ const createWindow = () => {
             return
           }
           if(!(catalog && query)) {   
-            if(pageType == 'plugin') {                     
+            if(pageType == 'plugin') {              
               outputDoc('*').each((index, element) => {
                 if(outputDoc(element).attr('href')) {
                   var newLink = outputDoc(element).attr('href').replaceAll('./',baseURL)
@@ -242,7 +252,7 @@ const createWindow = () => {
                     if(catalogs[catalog].resultFormat == 'json') {
                       return filterJSONRecord(rec,[recIdField,...displayFields],catalogs[catalog].resultFields) 
                     } else {
-                      return filterRecordFields(rec,[recIdField,...displayFields])
+                      return filterRecordFields(rec,[recIdField,...displayFields],catalogs[catalog].resultFields)
                     }
                   })
                   outputDoc('#results').append(renderRecords([[recIdField,...displayFields],...resultsTable],format))
@@ -312,7 +322,7 @@ const createWindow = () => {
               }
             })
           } else if(catalogType == "almasru") {
-            var sruClient = new SRUClient(catalogs[catalog].baseurl)
+            var sruClient = new SRUClient(catalogs[catalog])
             sruClient.connect().then((success) => {
               if(success) {
                 catalogID = catalog
@@ -337,8 +347,7 @@ const createWindow = () => {
             if(catalog != catalogID || !z3950client?.isConnected()) {
               catalogID = catalog
               latestQuery = ""
-              z3950client = new Z3950Client(catalogs[catalog].port, catalogs[catalog].host, catalogs[catalog].database, 
-                    catalogs[catalog].username ?? "", catalogs[catalog].password ?? "")
+              z3950client = new Z3950Client(catalogs[catalog])
               z3950client.connect()
 
             } 
@@ -352,7 +361,7 @@ const createWindow = () => {
                 latestQuery = query
                 latestResults = []
                 displayResults = [] 
-                z3950client.query(query,startAtRecord,maxRecs,catalogs[catalog].details).then((results) => {
+                z3950client.query(query,startAtRecord,maxRecs).then((results) => {
                   latestResultCount = results.numberOfRecords
                   for(var i = 0; i < results.records.length; i++) {
                     var rec = Marc.parse(Buffer.from(results.records[i],'binary'),'iso2709')                 
@@ -393,9 +402,14 @@ function filterJSONRecord(jsonRecord,fields = [],mapping = []) {
   var filteredFields = []
   if(fields.length > 0) {
     for(var i = 0; i < fields.length; i++) {
-      var fi = fields[i].toLowerCase()
-      fi = Object.hasOwn(mapping,fi) ? mapping[fi] : fi
-      var val = JSONPath({path:fi, json:jsonRecord})[0] ?? ""      
+      var fieldspec = fields[i].toLowerCase()
+      var filtermap = mapping.filter(m => m.code == fieldspec)
+      if(filtermap.length > 0) {
+        fieldspec = filtermap[0].value
+      } else {
+        fieldspec = fields[i]
+      }
+      var val = JSONPath({path:fieldspec, json:jsonRecord})[0] ?? ""      
       if(Array.isArray(val)) {
         val = val.join("\xA6")
       }
@@ -408,17 +422,52 @@ function filterJSONRecord(jsonRecord,fields = [],mapping = []) {
   return filteredFields
 }
 
-function filterRecordFields(marc, fields = []) {
+function filterRecordFields(marc, fields = [],mapping = []) {
   var filteredFields = []
   if(fields.length > 0) {
     for(var i = 0; i < fields.length; i++) {
-      var tag = fields[i].substring(0,3).replaceAll('x','.')
-      var sf = fields[i].substring(3)  || "" 
+      var fieldspec = fields[i].toLowerCase()
+      var filtermap = mapping.filter(m => m.code == fieldspec)
+      if(filtermap.length > 0) {
+        fieldspec = filtermap[0].value
+      } else {
+        fieldspec = fields[i]
+      }
+      var tag = fieldspec.substring(0,3).replaceAll(/[Xx]/g,'.')
+      var sf = fieldspec.substring(3) || "" 
+      var substart = undefined
+      var subend = undefined
+      var match = sf.match(/\(([0-9]+)-([0-9]+)\)/)
+      if(match) {
+        substart = parseInt(match[1])
+        subend = parseInt(match[2])
+        sf.replace(match[0],"")
+      }
+      match = sf.match(/\((-?[0-9]+)\)/)
+      if(match) {
+        substart = parseInt(match[1])
+      }
+       
+
+      var filter = ""
+      match = sf.match(/#(.*)$/)
+      if(match) {
+        filter = match[1]
+        sf = sf.replace(/#.*$/,"")
+      }
       var fields_i = marc.get(new RegExp(`^${tag}`))
+
+      if(tag == 'LDR') {
+        fields_i = marc.leader
+      }
       var val = ""
-      if(fields_i.length > 0) {
-        if(tag.startsWith("00")) {      
+      if(fields_i.length > 0) { 
+        if(tag == 'LDR') {
+          val = fields_i
+          val = applyAdditionalFilters(val,substart,subend,filter)
+        } else if(tag.startsWith("00")) {      
           val = fields_i[0].value
+          val = applyAdditionalFilters(val,substart,subend,filter)
         } else {
           var selectedSubfields = fields_i.map(field => field.subf)
           if(sf.includes("=")) {
@@ -444,16 +493,42 @@ function filterRecordFields(marc, fields = []) {
               )
             )
           }
-          val = selectedSubfields.map(
+          
+          selectedSubfields = selectedSubfields.map(
             sflist => sflist.map(
-              subfield => subfield[1]).join(' ')
-            ).join("\xA6")
+              subfield => subfield[1]
+            ).join(' ')
+          ).map(
+            field => applyAdditionalFilters(field,substart,subend,filter)
+          ).filter(
+            field => (field != "")
+          )
+          val = selectedSubfields.join("\xA6")            
         }        
       }
       filteredFields.push(val)
     }
   }
   return filteredFields
+}
+
+function applyAdditionalFilters(value, substart,subend,filter) {
+  if(substart != undefined && subend != undefined) {
+    value = value.substring(substart,subend+1)
+  } else if(substart != undefined) {
+    value = value.slice(substart)
+  } 
+  if(filter.match(/\/.*\//)) {
+    try {
+      var regex = new RegExp(filter.substring(1,filter.length-1))
+      value = value.match(regex) ? value : ""
+    } catch(e) {
+      console.log(e)
+    }
+  } else {
+    value = value.includes(filter) ? value : ""
+  }
+  return value
 }
 
 function renderRecords(records,format = 'html') {
@@ -470,7 +545,7 @@ function renderRecords(records,format = 'html') {
     if(records[0].length > 6) {
       for(var i = 1; i < records.length; i++) {
         rendered += `<div class='viewlink'><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
-              `&q=recno+%3D+%22${records[i][0]}%22&displayFields=${displayFields}'>View Full Record</a></div>`
+              `&q=recno+%3D+%22${records[i][0]}%22&displayFields=${displayFields.join("|")}'>View Full Record</a></div>`
         rendered += "<table class='marc'>"
         records[i] = records[i].map(rec => escapeHtml(rec))
         for(var j = 1; j < records[i].length; j++) {
@@ -489,15 +564,15 @@ function renderRecords(records,format = 'html') {
         records[i] = records[i].map(rec => escapeHtml(rec))
         rendered += "<tr>"
         rendered += `<td class='viewlink'><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
-            `&q=recno+%3D+%22${records[i][0]}%22&displayFields=${displayFields}'>View</a></td>`
+            `&q=recno+%3D+%22${records[i][0]}%22&displayFields=${displayFields.join("|")}'>View</a></td>`
         rendered += "<td>" + records[i].slice(1).join("</td><td>") + "</td>"
         rendered += "</tr>"
       }
       rendered += "</table>"
       rendered = rendered.replaceAll("\xA6","<br/>")
-    }
-    rendered = decode(rendered)
+    }    
   }
+  rendered = decode(rendered)
   return rendered
 }
 
@@ -546,6 +621,15 @@ function loadConfigJSON() {
   try {   
     const data = fs.readFileSync(filePath)
     catalogs = JSON.parse(data);
+
+    const catkeys = Object.keys(catalogs)
+
+    for(var i = 0; i < catkeys.length; i++) {
+      if(!Object.hasOwn(catalogs[catkeys[i]],'resultFields')) {
+        catalogs[catkeys[i]].resultFields = defaultResults
+      }
+    }
+    menuMap = new MenuMap(catalogs)
   } catch(error) {
     console.error("Failed to read JSON file:", error)
   }
@@ -615,6 +699,10 @@ ipcMain.handle('load-config-file', async (event, sourceFilePath) => {
     console.error('Error copying file:', error.message);
   }
   return
+});
+
+ipcMain.handle('get-version', async () => {
+  return app.getVersion(); 
 });
 
 // --- Auto-Updater Event Listeners ---
