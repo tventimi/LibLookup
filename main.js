@@ -392,9 +392,8 @@ const createWindow = () => {
 app.whenReady().then(() => {
   if(!win) {
     createWindow()
-    if (process.platform === 'win32') {    
-      autoUpdater.checkForUpdatesAndNotify();
-    }
+    console.log("update")
+    autoUpdater.checkForUpdatesAndNotify();
   } 
 })
 
@@ -638,9 +637,7 @@ function loadConfigJSON() {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()  
-    if (process.platform === 'win32') {    
-      autoUpdater.checkForUpdatesAndNotify();
-    }
+    autoUpdater.checkForUpdatesAndNotify();
   }
 })
 
@@ -654,7 +651,7 @@ app.on('window-all-closed', () => {
   if(z3950client?.isConnected()) {
     z3950client.disconnect()
   }
-  if (process.platform !== 'darwin') {
+  if (process.platform == 'darwin') {
     app.quit()
   }
 })
