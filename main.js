@@ -539,8 +539,9 @@ function renderRecords(records,format = 'html') {
     }    
     rendered += escapeHtml(JSON.stringify(recordsAndCount))
   } else if(format == 'csv') {
-    rendered += escapeHtml(csv.stringify(records))
+    rendered += escapeHtml(csv.stringify(records.map(row => row.map(cell => decode(cell)))))
   } else if (format == 'html') {
+    records = records.map(row => row.map(cell => decode(cell)))
     if(records[0].length > 6) {
       for(var i = 1; i < records.length; i++) {
         rendered += `<div class='viewlink'><a href='index.html?singleRecord=true&catalog=${catalogID}` + 

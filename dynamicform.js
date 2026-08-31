@@ -274,6 +274,9 @@ function clearTerms() {
     document.getElementById("operator").disabled = true;
     document.getElementById("deleteTermButton").disabled = true;
     document.getElementById("clearTermsButton").disabled = true;
+    if(document.getElementById("queryTerm").value.length > 0) {
+        document.getElementById("addTermButton").disabled = false
+    }
     updateQueryString()
     updateBatchMode()
 }
