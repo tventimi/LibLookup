@@ -45,6 +45,12 @@ function init() {
         }
     });
 
+    relatorMenu.addEventListener("change", function(event) {
+        if(event.target.value == "empty") {
+            queryTerm.value = "[empty]"
+            document.getElementById("addTermButton").disabled = false
+        } 
+    })
     queryTerm.addEventListener("input", function(event) {
         if(queryTerm.value.length > 0 && !document.getElementById("queryString").value.startsWith("link")) {
             document.getElementById("addTermButton").disabled = false

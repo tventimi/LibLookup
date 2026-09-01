@@ -55,8 +55,15 @@ export class SRUClient {
             //if query contains a barcode, only include item records with that barcode
             if(sruQuery.barcode) {
                 holdingsRecords.forEach(holding =>  {
-                    const copies = selectWithNs(`.//isohold:copyInformation[isohold:pieceIdentifier/isohold:value/text()!=${sruQuery.barcode}]`,holding)
-                    const components = selectWithNs(`.//isohold:component[isohold:pieceIdentifier/isohold:value/text()!=${sruQuery.barcode}]`,holding)
+                    var copies = []
+                    var components = []
+                    if(sruQuery.barcode == "[empty]") {
+                        copies = selectWithNs(`.//isohold:copyInformation[boolean(isohold:pieceIdentifier/isohold:value)]`,holding)
+                        components = selectWithNs(`.//isohold:component[boolean(isohold:pieceIdentifier/isohold:value)]`,holding)
+                    } else {
+                        copies = selectWithNs(`.//isohold:copyInformation[isohold:pieceIdentifier/isohold:value/text()!=${sruQuery.barcode}]`,holding)
+                        components = selectWithNs(`.//isohold:component[isohold:pieceIdentifier/isohold:value/text()!=${sruQuery.barcode}]`,holding)
+                    }
                     const nonMatchingItems = [...copies,...components]
                     nonMatchingItems.forEach(item => {
                         item.parentNode.removeChild(item)
