@@ -22,7 +22,6 @@ import { JSONPath } from 'jsonpath-plus'
 import { decode } from 'html-entities';
 const { autoUpdater } = autoUpdaterPkg;
 
-
 if (started) app.quit();
 
 Menu.setApplicationMenu(null);
@@ -323,16 +322,28 @@ const createWindow = () => {
             })
           } else if(catalogType == "almasru") {
             var sruClient = new SRUClient(catalogs[catalog])
+            const holdingsFields = catalogs[catalog].resultFields?.filter(
+              res => res.value.includes('isohold:')
+            ).map(res => res.code)
+            const includeHoldings = (holdingsFields &&
+              holdingsFields.filter(field => submittedDisplayFields.includes(field)).length > 0)
+
             sruClient.connect().then((success) => {
               if(success) {
                 catalogID = catalog
                 latestQuery = query
                 latestResults = []
                 displayResults = []
-                sruClient.query(query,startAtRecord,maxRecs).then((results) => {
-                  latestResultCount = results.numberOfRecords
+
+                sruClient.query(query,startAtRecord,maxRecs,includeHoldings).then((results) => {
+                  latestResultCount = results.numberOfRecords                  
                   for(var i = 0; i < results.records.length; i++) {
-                    var rec = Marc.parse(results.records[i],'marcxml')                  
+                    var rec = Marc.parse(results.records[i],'marcxml')    
+                    if(results.holdings?.length > 0) {
+                      results.holdings[i].forEach(hold => {
+                        rec.append(['HOL','  ','a',hold])
+                      })
+                    }    
                     latestResults.push(rec)
                     displayResults.push(rec)          
                   } 
@@ -392,7 +403,6 @@ const createWindow = () => {
 app.whenReady().then(() => {
   if(!win) {
     createWindow()
-    console.log("update")
     autoUpdater.checkForUpdatesAndNotify();
   } 
 })
@@ -432,6 +442,16 @@ function filterRecordFields(marc, fields = [],mapping = []) {
       } else {
         fieldspec = fields[i]
       }
+
+      if(fieldspec.includes('isohold:')) {
+        var holdingsFields = marc.get('HOL')
+        holdingsFields = holdingsFields.map(hold => {          
+          return SRUClient.extractIsoHoldFields(hold.subf[0][1],fieldspec)
+        })
+        filteredFields.push(holdingsFields.map(items => items.join("\xA6")).join("\xA6"))
+        continue;
+      }
+
       var tag = fieldspec.substring(0,3).replaceAll(/[Xx]/g,'.')
       var sf = fieldspec.substring(3) || "" 
       var substart = undefined

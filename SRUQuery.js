@@ -14,6 +14,7 @@ var indexes = {
 
 export class SRUQuery {
     queryString = ""
+    barcode = null
 
     constructor(queryString) {
         var queryTokens = tokenize(queryString)
@@ -21,6 +22,10 @@ export class SRUQuery {
             var index = queryTokens[i]
             var relator = queryTokens[i+1]
             var searchTerm = queryTokens[i+2]
+
+            if(index.includes('barcode')) {
+                this.barcode = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
+            }
             if(queryString != "") {
                 this.queryString += " "
             }
