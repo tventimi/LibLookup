@@ -50,6 +50,8 @@ var startAtRecord = 1
 var expectedResultCount = defaultPageSize
 var win
 var z3950client
+var sruClient
+var customClient
 
 const defaultResults = [
     {name:"Record ID",code:"recno",value:"001"},
@@ -290,101 +292,111 @@ const createWindow = () => {
               return
             }
           }
-          const catalogType = catalogs[catalog].type
-          if(catalogType == "custom") {
-            var customClient = new CustomClient(catalogs[catalog])
-            customClient.connect().then((success) => {
-              if(success) {
-                var calculateCount = !((catalogID == catalog) && (query == latestQuery))
-                catalogID = catalog
-                latestResults = []
-                displayResults = []
-                customClient.query(query,startAtRecord,maxRecs,calculateCount).then((results) => {
-                  if(calculateCount) {
-                    latestResultCount = results.numberOfRecords
-                  }
-                  catalogLink = customClient.getCatalogLink()
+
+          try {
+            const catalogType = catalogs[catalog].type
+            if(catalogType == "custom") {
+              var customClient = new CustomClient(catalogs[catalog])
+              customClient.connect().then((success) => {
+                if(success) {
+                  var calculateCount = !((catalogID == catalog) && (query == latestQuery))
+                  catalogID = catalog
+                  latestResults = []
+                  displayResults = []
+                  customClient.query(query,startAtRecord,maxRecs,calculateCount).then((results) => {
+                    if(calculateCount) {
+                      latestResultCount = results.numberOfRecords
+                    }
+                    catalogLink = customClient.getCatalogLink()
+                    latestQuery = query
+                    for(var i = 0; i < results.records.length; i++) {
+                      var rec = results.records[i]
+                      if(catalogs[catalog].resultFormat != 'json') {
+                        rec = Marc.parse(results.records[i],'marcxml')
+                      }                  
+                      latestResults.push(rec)
+                      displayResults.push(rec)          
+                    }                   
+                    resultsStream.next(displayResults)
+                    resultsStream.next(null)
+                  })
+                } else {
+                  resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+                }
+              })
+            } else if(catalogType == "almasru") {
+              if(catalog != catalogID) {
+                sruClient = new SRUClient(catalogs[catalog])
+              }
+              const holdingsFields = catalogs[catalog].resultFields?.filter(
+                res => res.value.includes('isohold:')
+              ).map(res => res.code)
+              const includeHoldings = (holdingsFields &&
+                holdingsFields.filter(field => submittedDisplayFields.includes(field)).length > 0)
+
+              sruClient.connect().then((success) => {
+                if(success) {
+                  catalogID = catalog
                   latestQuery = query
-                  for(var i = 0; i < results.records.length; i++) {
-                    var rec = results.records[i]
-                    if(catalogs[catalog].resultFormat != 'json') {
-                      rec = Marc.parse(results.records[i],'marcxml')
-                    }                  
-                    latestResults.push(rec)
-                    displayResults.push(rec)          
-                  }                   
-                  resultsStream.next(displayResults)
-                  resultsStream.next(null)
-                })
-              } else {
-                resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
-              }
-            })
-          } else if(catalogType == "almasru") {
-            var sruClient = new SRUClient(catalogs[catalog])
-            const holdingsFields = catalogs[catalog].resultFields?.filter(
-              res => res.value.includes('isohold:')
-            ).map(res => res.code)
-            const includeHoldings = (holdingsFields &&
-              holdingsFields.filter(field => submittedDisplayFields.includes(field)).length > 0)
+                  latestResults = []
+                  displayResults = []
 
-            sruClient.connect().then((success) => {
-              if(success) {
+                  sruClient.query(query,startAtRecord,maxRecs,includeHoldings).then((results) => {
+                    latestResultCount = results.numberOfRecords                  
+                    for(var i = 0; i < results.records.length; i++) {
+                      var rec = Marc.parse(results.records[i],'marcxml')    
+                     if(results.holdings?.length > 0) {
+                        results.holdings[i].forEach(hold => {
+                         rec.append(['HOL','  ','a',hold])
+                       })
+                     }    
+                     latestResults.push(rec)
+                     displayResults.push(rec)          
+                   } 
+                   resultsStream.next(displayResults)
+                   resultsStream.next(null)
+                  })
+                } else {
+                  resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+                }
+              })
+            } else if(catalogType == "z3950") {
+              if(catalog != catalogID || !z3950client?.isConnected()) {
                 catalogID = catalog
-                latestQuery = query
-                latestResults = []
-                displayResults = []
+                latestQuery = ""
+                z3950client = new Z3950Client(catalogs[catalog])
+                z3950client.connect()
 
-                sruClient.query(query,startAtRecord,maxRecs,includeHoldings).then((results) => {
-                  latestResultCount = results.numberOfRecords                  
-                  for(var i = 0; i < results.records.length; i++) {
-                    var rec = Marc.parse(results.records[i],'marcxml')    
-                    if(results.holdings?.length > 0) {
-                      results.holdings[i].forEach(hold => {
-                        rec.append(['HOL','  ','a',hold])
-                      })
-                    }    
-                    latestResults.push(rec)
-                    displayResults.push(rec)          
-                  } 
-                  resultsStream.next(displayResults)
-                  resultsStream.next(null)
-                })
-              } else {
-                resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
-              }
-            })
-          } else if(catalogType == "z3950") {
-            if(catalog != catalogID || !z3950client?.isConnected()) {
-              catalogID = catalog
-              latestQuery = ""
-              z3950client = new Z3950Client(catalogs[catalog])
-              z3950client.connect()
+              } 
+              var includeWCH = includeWorldCatHoldings(catalogs[catalog],displayFields)
+              var interval = setInterval(async () => {
+                if(z3950client.latestError != "") {
+                  resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+                  clearInterval(interval)  
+                }
+               if(z3950client?.isConnected()) { 
+                  catalogID = catalog
+                  latestQuery = query
+                  latestResults = []
+                  displayResults = [] 
 
-            } 
-            var interval = setInterval(async () => {
-              if(z3950client.latestError != "") {
-                resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
-                clearInterval(interval)  
-              }
-              if(z3950client?.isConnected()) { 
-                catalogID = catalog
-                latestQuery = query
-                latestResults = []
-                displayResults = [] 
-                z3950client.query(query,startAtRecord,maxRecs).then((results) => {
-                  latestResultCount = results.numberOfRecords
-                  for(var i = 0; i < results.records.length; i++) {
-                    var rec = Marc.parse(Buffer.from(results.records[i],'binary'),'iso2709')                 
-                    latestResults.push(rec)
-                    displayResults.push(rec)          
-                  } 
-                  resultsStream.next(displayResults)
-                  resultsStream.next(null)
-                })
-                clearInterval(interval)                
-              }              
-            },100)
+                  z3950client.query(query,startAtRecord,maxRecs).then((results) => {
+                    latestResultCount = results.numberOfRecords
+                    for(var i = 0; i < results.records.length; i++) {
+                      var rec = Marc.parse(Buffer.from(results.records[i],'binary'),'iso2709')                 
+                      latestResults.push(rec)
+                      displayResults.push(rec)          
+                    } 
+                    resultsStream.next(displayResults)
+                    resultsStream.next(null)
+                  })
+                  clearInterval(interval)                
+                }              
+              },100)
+            }
+          } catch {
+            resultsStream.next([])
+            resultsStream.next(null)
           }            
         })
         clearInterval(requestInterval)
@@ -407,6 +419,20 @@ app.whenReady().then(() => {
   } 
 })
 
+function includeWorldCatHoldings(catalogConfig,displayFields) {
+  if(catalogConfig.host != 'zcat.oclc.org' || catalogConfig.database != 'OLUCWorldCat') {
+    return false
+  }
+  var mapping = catalogConfig.resultFields ?? []
+  for(var i = 0; i < displayFields.length; i++) {
+    var filtermap = mapping.filter(m => m.code == displayFields[i].toLowerCase())
+    var field = (filtermap.length > 0) ? filtermap[0].value : displayFields[i]
+    if(field.match(/^948\$?[a-z]*[a-gi-z][a-z]*/)) {
+      return true
+    }
+  }
+  return false
+}
 function filterJSONRecord(jsonRecord,fields = [],mapping = []) {
   var filteredFields = []
   if(fields.length > 0) {

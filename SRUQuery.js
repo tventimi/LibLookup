@@ -26,6 +26,12 @@ export class SRUQuery {
             if(index.includes('barcode')) {
                 this.barcode = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
             }
+
+            if(relator == "empty") {
+                relator = "="
+                searchTerm = "\"\""
+            }
+
             if(queryString != "") {
                 this.queryString += " "
             }
