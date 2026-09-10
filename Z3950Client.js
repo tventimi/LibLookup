@@ -25,6 +25,7 @@ export class Z3950Client {
     resultSetId = 0
     awaitingResponse = false
     config = null
+    elementSet = "F"
 
     constructor(config) {
         this.config = config
@@ -95,6 +96,7 @@ export class Z3950Client {
                                 this.latestResultCount = numResults
                             }
                         }
+                        console.log(`Search returned ${this.latestResultCount} record(s)`)
                         break;
                     case 25:
                         respType = "presentResponse"
@@ -109,6 +111,11 @@ export class Z3950Client {
                                 for(var j = 0; j < allRecords.length; j++) {
                                     var rec = allRecords[j].valueBlock.value[1].valueBlock.value[0].valueBlock.value[0].valueBlock.value[1]
                                     respValue += String.fromCodePoint(...rec.valueBlock.valueHexView)
+                                }
+                            }
+                            else if(respBody[i].idBlock.tagNumber == 130) {
+                                if(respBody[i].valueBlock.value[2].valueBlock.value.includes("out of bounds for byte")) {
+                                    this.latestError = "wcholdingslimit"
                                 }
                             }
                         }
@@ -170,6 +177,7 @@ export class Z3950Client {
 
     query(queryString, startRecord = 1, maximumRecords = 50) {   
         console.log(`Sending query '${queryString}'`)
+        this.latestError = ""
         return new Promise((resolve) => {            
             if(this.isConnected()) {
                 this.searchAndPresent(queryString,startRecord,maximumRecords,this.config).then(recs => {
@@ -358,14 +366,14 @@ export class Z3950Client {
         return req
     }
 
-    createPresentRequest(resultSetId, recno = 1, count = 1, elementSet = 'F') {
+    createPresentRequest(resultSetId, recno = 1, count = 1) {
         var encoder = new TextEncoder()
         var marcObj = new asn1js.ObjectIdentifier({value: USMARC_OBJID})
         var req = this.createASN1object({id: 24, value: [
             {id: 31, value: encoder.encode(resultSetId)}, //result set ID
             {id: 30, value: recno}, //starting record number
             {id: 29, value: count},  //number of records to return
-            {id: 19, value: [{id: 0, value: encoder.encode(elementSet)}]},
+            {id: 19, value: [{id: 0, value: encoder.encode(this.elementSet)}]},
             {id: 104, value: marcObj.valueBlock.toBER()} //USMARC format
         ]})
         return req

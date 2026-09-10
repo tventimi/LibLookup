@@ -113,6 +113,7 @@ function init() {
         setCustomResult(event.target.value)
     })
     updateMenus(catalogCode)
+    updateQueryString()
 }
 
 document.getElementById("customResultField").addEventListener("keydown",function(event) {    

@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded',function() {
             return
         }
         const savedValue = localStorage.getItem(input.id);
-        if (savedValue) {
+        if (savedValue && input.checkVisibility()) {
             input.value = savedValue;
             input.dispatchEvent(new Event('change', { bubbles: true }));
         }

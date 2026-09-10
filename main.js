@@ -32,6 +32,7 @@ const baseURL = `https://${libLookupDomain}:${libLookupPort}/`
 const configFileName = "catalogs.json"
 const defaultPageSize = 50
 const intervalLength = 100 //100ms
+const wcHoldingsLimit = 1600
 
 var resultsPerPage = defaultPageSize
 var latestQuery = ""
@@ -366,31 +367,61 @@ const createWindow = () => {
                 latestQuery = ""
                 z3950client = new Z3950Client(catalogs[catalog])
                 z3950client.connect()
-
               } 
               var includeWCH = includeWorldCatHoldings(catalogs[catalog],displayFields)
+              var awaitingResults = false
+              var fullRecordStart = 0
+              z3950client.elementSet = "F"
+              catalogID = catalog
+              latestQuery = query
+              latestResults = []
+              displayResults = [] 
+              
               var interval = setInterval(async () => {
-                if(z3950client.latestError != "") {
+                if(z3950client.latestError != "" && z3950client.latestError != "wcholdingslimit") {
                   resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
                   clearInterval(interval)  
                 }
-               if(z3950client?.isConnected()) { 
-                  catalogID = catalog
-                  latestQuery = query
-                  latestResults = []
-                  displayResults = [] 
-
-                  z3950client.query(query,startAtRecord,maxRecs).then((results) => {
-                    latestResultCount = results.numberOfRecords
-                    for(var i = 0; i < results.records.length; i++) {
-                      var rec = Marc.parse(Buffer.from(results.records[i],'binary'),'iso2709')                 
-                      latestResults.push(rec)
-                      displayResults.push(rec)          
-                    } 
-                    resultsStream.next(displayResults)
-                    resultsStream.next(null)
-                  })
-                  clearInterval(interval)                
+                if(z3950client?.isConnected() && !awaitingResults) {                   
+                  awaitingResults = true    
+                  z3950client.query(query,startAtRecord+fullRecordStart,maxRecs-fullRecordStart).then((results) => {
+                    if(z3950client.latestError == "wcholdingslimit") {
+                      z3950client.elementSet = "F"
+                    } else {
+                      if(z3950client.elementSet == "F") {
+                        latestResultCount = results.numberOfRecords      
+                      }       
+                      for(var i = 0; i < results.records.length; i++) {
+                        var rec = Marc.parse(Buffer.from(results.records[i],'binary'),'iso2709')    
+                        if(z3950client.elementSet == "F") {
+                          latestResults.push(rec)
+                          displayResults.push(rec)  
+                          if(includeWCH) {                                        
+                            var wcHoldingsSummary = rec.get('948')[0].subf[0][1]
+                            var m = wcHoldingsSummary.match(/([0-9]+) OTHER HOLDINGS/)   
+                            var wcHoldingsCount = m[1]
+                            if(wcHoldingsCount > wcHoldingsLimit) {
+                              fullRecordStart = i+1
+                            }
+                          }
+                        } else if(z3950client.elementSet == "FA") {                          
+                          var wcHoldings = rec.get('948')                       
+                          for(var j = 0; j < wcHoldings.length; j++) {   
+                            var new948 = [wcHoldings[j].tag, wcHoldings[j].ind1 + wcHoldings[j].ind2, ...wcHoldings[j].subf.flat()]                
+                            latestResults[i+fullRecordStart].append(new948)
+                          }
+                        }
+                      }
+                      if(includeWCH && z3950client.elementSet == "F") {
+                        z3950client.elementSet = "FA"
+                      } else {
+                        resultsStream.next(displayResults)
+                        resultsStream.next(null)
+                        clearInterval(interval)
+                      } 
+                      awaitingResults = false
+                    }              
+                  })  
                 }              
               },100)
             }
