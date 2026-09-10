@@ -20,6 +20,7 @@ function init() {
         if(Object.hasOwn(menuMap,catalogCode)) {
             if(event.target.value == "SECONDARY_INDEX") {
                 document.getElementById("secondaryIndexDialog").showModal()
+                document.getElementById("secondaryIndexFilter").dispatchEvent(new Event("input"))
                 return
             }
             var menuContents = menuMap[catalogCode].primary
@@ -247,7 +248,6 @@ function deleteTerm() {
 
     const index = document.getElementById("index")
     const valToDelete = queryTokens.pop()
-    console.log(valToDelete)
     index.value = valToDelete
     if(index.value == "") {
         index.selectedIndex = 0
