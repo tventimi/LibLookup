@@ -360,6 +360,8 @@ const createWindow = () => {
                 } else {
                   resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
                 }
+              }).catch((err) => {
+                console.log(err)
               })
             } else if(catalogType == "z3950") {
               if(catalog != catalogID || !z3950client?.isConnected()) {

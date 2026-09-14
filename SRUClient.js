@@ -79,8 +79,9 @@ export class SRUClient {
         var allRecords = []
         var allHoldings = []
         for(var i = 0; i < urls.length; i++) {
-            const queryURL = urls[i]
-            const segmentResponse = await fetch(queryURL)
+            const thisSegmentURL = urls[i]
+            console.log(thisSegmentURL)
+            const segmentResponse = await fetch(thisSegmentURL)
             const segmentText = await segmentResponse.text()
             const segmentXML = parser.parseFromString(segmentText, "text/xml");
             var records = selectWithNs('//srw:searchRetrieveResponse/srw:records/srw:record/srw:recordData/marc:record', segmentXML)
@@ -89,7 +90,7 @@ export class SRUClient {
             allRecords.push(...records)
         
             if(includeHoldings) {
-                const holdingsURL = queryURL + "&recordSchema=isohold"
+                const holdingsURL = thisSegmentURL + "&recordSchema=isohold"
                 console.log(holdingsURL)
 
                 const holdingsResponse = await fetch(holdingsURL)
@@ -164,10 +165,8 @@ export class SRUClient {
     }
 
     buildSegmentURL(queryString, startMMS, endMMS, startRecord, maximumRecords) {
-        const parenthesize = !queryString.endsWith(")")
-
-        return this.config.baseurl + "?version=1.2&operation=searchRetrieve&query=" + (parenthesize ? "(+" : "") + 
-            encodeURIComponent(queryString) + (parenthesize ? "+)" : "") + 
+        return this.config.baseurl + "?version=1.2&operation=searchRetrieve&query=(+" + 
+            encodeURIComponent(queryString) + "+)" + 
             ((startMMS != null) ? `+AND+alma.mms_id+>=+99${startMMS}0000` : "") + 
             ((endMMS != null) ? `+AND+alma.mms_id+<+99${endMMS}0000` : "") + 
             `&startRecord=${startRecord}&maximumRecords=${maximumRecords}`

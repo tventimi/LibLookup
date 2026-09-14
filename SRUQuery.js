@@ -43,7 +43,7 @@ export class SRUQuery {
                 this.queryString += "(" + searchTerm + " )"
             } else {
                 const mappedIndex = Object.hasOwn(indexes,index) ? indexes[index] : index
-                this.queryString += "(" + mappedIndex + " " + relator + " " + searchTerm + " )" 
+                this.queryString += mappedIndex + " " + relator + " " + searchTerm
             }
             if(i+3 < queryTokens.length) {
                 this.queryString += " " + queryTokens[i+3]
