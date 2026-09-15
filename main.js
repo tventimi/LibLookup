@@ -477,6 +477,7 @@ function filterJSONRecord(jsonRecord,fields = [],mapping = []) {
       } else {
         fieldspec = fields[i]
       }
+      jsonRecord = convertEmbeddedJSON(jsonRecord)
       var val = JSONPath({path:fieldspec, json:jsonRecord})[0] ?? ""      
       if(Array.isArray(val)) {
         val = val.join("\xA6")
@@ -488,6 +489,18 @@ function filterJSONRecord(jsonRecord,fields = [],mapping = []) {
     }
   }
   return filteredFields
+}
+
+function convertEmbeddedJSON(jsonRecord) {
+  var jsonString = JSON.stringify(jsonRecord)
+  var embeddedObjects = jsonString.match(/\"\{\\\"[^\}]*\}\"/g)
+  if(embeddedObjects) {
+    for(var i = 0; i < embeddedObjects.length; i++) {
+      jsonString = jsonString.replace(embeddedObjects[i],embeddedObjects[i]
+          .replaceAll('\\\"','\"').replace(/^\"/,'').replace(/\"$/,''))
+    }
+  } 
+  return JSON.parse(jsonString)
 }
 
 function filterRecordFields(marc, fields = [],mapping = []) {
