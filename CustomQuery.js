@@ -25,7 +25,7 @@ export class CustomQuery {
             if(this.queryString != "") {
                 this.queryString += " "
             }   
-            if(relator != "==") {
+            if(!relator.includes('=')) {
                 if(searchTerm.match(/^\".*\"$/)) {
                     searchTerm = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
                 }
