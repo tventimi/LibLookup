@@ -25,12 +25,11 @@ export class CustomQuery {
             if(this.queryString != "") {
                 this.queryString += " "
             }   
-            if(!relator.includes('=')) {
+                
+            if(index == 'link') {       
                 if(searchTerm.match(/^\".*\"$/)) {
                     searchTerm = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
                 }
-            }      
-            if(index == 'link') {       
                 searchTerm = searchTerm.replaceAll("\"\"","\"")      
                 searchTerm = searchTerm.replace(/^http[^\?]*\?/,'')
                 searchTerm = searchTerm.replace(/${config.pageParam}=[^=]*/,'')
@@ -42,9 +41,17 @@ export class CustomQuery {
                 this.isCatalogLink = true
                 return
             }
-            if(index == "raw") {                
+            else if(index == "raw") {     
+                if(searchTerm.match(/^\".*\"$/)) {
+                    searchTerm = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
+                }           
                 searchTerm = searchTerm.replaceAll("\"\"","\"")
             }
+            else if(!relator.includes('=')) {
+                if(searchTerm.match(/^\".*\"$/)) {
+                    searchTerm = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
+                }
+            }  
             const mappedRelator = Object.hasOwn(this.relators,relator) ? this.relators[relator] : this.relators['default'] 
 
             if(Object.hasOwn(this.indexes,index)) {
