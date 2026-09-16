@@ -68,11 +68,11 @@ document.addEventListener('DOMContentLoaded',function() {
             }
         }
     });
+    document.getElementById("submit").addEventListener('click', function() {
+        document.getElementById("catalogLink").innerHTML = "Searching..."
+    })
 })
 
-document.getElementById("submit").addEventListener('click', function() {
-    document.getElementById("resultsPanel").innerHTML = "Searching..."
-})
 
 queryForm.addEventListener('submit', function(event) {    
     const formControls = event.target.elements;
