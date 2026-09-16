@@ -20,18 +20,24 @@ function init() {
         if(Object.hasOwn(menuMap,catalogCode)) {
             if(event.target.value == "SECONDARY_INDEX") {
                 document.getElementById("secondaryIndexDialog").showModal()
+                document.getElementById("submitSecondaryIndexDialog").disabled = true
                 document.getElementById("secondaryIndexFilter").dispatchEvent(new Event("input"))
                 return
             }
-            var menuContents = menuMap[catalogCode].primary
-            var indexEntry = menuContents.filter(index => index.code == event.target.value)
-            if(indexEntry.length > 0) {
-                var relators = ['=']
-                if(Object.hasOwn(indexEntry[0],'relators')) {
-                    relators = indexEntry[0].relators
-                } 
-                updateRelatorMenu(relators)
+            var menuContents = [menuMap[catalogCode].primary]
+            if(Object.hasOwn(menuMap[catalogCode],'secondary')) {
+                menuContents.push(menuMap[catalogCode].secondary)
             }
+            for(var i = 0; i < menuContents.length; i++) {
+                var indexEntry = menuContents[i].filter(index => index.code == event.target.value)
+                if(indexEntry.length > 0) {
+                    var relators = ['=']
+                    if(Object.hasOwn(indexEntry[0],'relators')) {
+                        relators = indexEntry[0].relators
+                    } 
+                    updateRelatorMenu(relators)
+                }
+            } 
         }
     })    
 
@@ -80,6 +86,14 @@ function init() {
         }
     })
 
+    document.getElementById("secondaryIndexList").addEventListener('click',function() {
+        if(document.getElementById("secondaryIndexList").value == "") {
+            document.getElementById("submitSecondaryIndexDialog").disabled = true
+        } else {
+            document.getElementById("submitSecondaryIndexDialog").disabled = false
+        }
+    })
+
     document.getElementById("secondaryIndexList").addEventListener('dblclick',function() {
         document.getElementById("submitSecondaryIndexDialog").click()
     })
@@ -88,9 +102,12 @@ function init() {
     document.getElementById("submitSecondaryIndexDialog").addEventListener('click',function() {
         const slist = document.getElementById("secondaryIndexList")
         const selectedCode = slist.value
-        indexMenu.insertBefore(new Option(slist[slist.selectedIndex].text,selectedCode),
-            indexMenu.lastElementChild)
-        indexMenu.selectedIndex = indexMenu.length - 2
+        indexMenu.value = selectedCode
+        if(indexMenu.value == "") {
+            indexMenu.insertBefore(new Option(slist[slist.selectedIndex].text,selectedCode),
+                indexMenu.lastElementChild)
+            indexMenu.selectedIndex = indexMenu.length - 2
+        }
         var relators = ['=']
         catalogCode = catalogSelect.value
         var indexEntry = menuMap[catalogCode].secondary.filter(index => index.code == selectedCode)
