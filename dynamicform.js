@@ -259,22 +259,26 @@ function deleteTerm() {
     document.getElementById("queryTerm").value = queryTerm.replaceAll("\"\"","\"")
     
     const relator = document.getElementById("relator")
-    relator.value = queryTokens.pop()
-    if(relator.value == "") {
-        relator.selectedIndex = 0
-    }
+    const prevRelator = queryTokens.pop()
 
     const index = document.getElementById("index")
     const valToDelete = queryTokens.pop()
     index.value = valToDelete
     if(index.value == "") {
         index.selectedIndex = 0
+    }    
+    index.dispatchEvent(new Event('change'))
+
+    relator.value = prevRelator
+    if(relator.value == "") {
+        relator.selectedIndex = 0
     }
 
     document.getElementById("addTermButton").disabled = false
     if(queryTokens.length > 0) {
         document.getElementById("operator").value = queryTokens.pop().toLowerCase()
     }
+
     
     if(searchTerms.selectedIndex === 0 && searchTerms.length > 1) {
         searchTerms.options[1].text = searchTerms.options[1].value.replace(/^[A-Z]* /,"")
