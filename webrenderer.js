@@ -70,9 +70,11 @@ document.addEventListener('DOMContentLoaded',function() {
     });
 })
 
+document.getElementById("submit").addEventListener('click', function() {
+    document.getElementById("resultsPanel").innerHTML = "Searching..."
+})
 
-queryForm.addEventListener('submit', function(event) {
-    console.log("blah")
+queryForm.addEventListener('submit', function(event) {    
     const formControls = event.target.elements;
     Array.from(formControls).forEach(element => {
         if ((element.tagName === 'SELECT' || element.tagName === 'INPUT') 
