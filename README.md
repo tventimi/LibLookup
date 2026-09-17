@@ -1,3 +1,4 @@
-[Latest Version (Windows)](https://github.com/tventimi/LibLookup/releases/latest/download/LibLookup-Windows-Setup-0.0.8-alpha.exe)
+[Latest Rekease](https://github.com/tventimi/LibLookup/releases/latest)
 
-[Latest Version (Mac)](https://github.com/tventimi/LibLookup/releases/latest/download/LibLookup-0.0.8-alpha.arm64.dmg)
+Windows: Download and run the ".exe" file.
+Mac: Download and run the ".dmg" file.
