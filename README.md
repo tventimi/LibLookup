@@ -1,4 +1,4 @@
-[Latest Release](https://github.com/tventimi/LibLookup/releases/latest)
+[Windows Version](https://github.com/tventimi/LibLookup/releases/latest/download/LibLookup-Windows-Setup.exe)
 
-- Windows: Download and run the ".exe" file.
-- Mac: Download and run the ".dmg" file.
+[Mac Version](https://github.com/tventimi/LibLookup/releases/latest/download/LibLookup-MacOS-Setup.dmg)
+
