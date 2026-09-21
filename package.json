@@ -22,9 +22,15 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
     "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron/fuses": "^1.8.0",
-    "electron": "^39.2.3"
+    "@eslint/css": "^2.0.0",
+    "@eslint/js": "^10.0.1",
+    "@eslint/json": "^2.1.0",
+    "electron": "^39.2.3",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0"
   },
   "dependencies": {
+    "@xmldom/xmldom": "^0.9.12",
     "asn1js": "^3.0.6",
     "cheerio": "^1.2.0",
     "csv": "^6.6.0",
@@ -34,7 +40,6 @@
     "jsonpath-plus": "^10.4.0",
     "marcjs": "^3.0.2",
     "rxjs": "^7.8.2",
-    "xmldom": "^0.6.0",
     "xpath": "^0.0.34"
   },
   "type": "module",
