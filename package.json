@@ -1,6 +1,6 @@
 {
   "name": "LibLookup",
-  "version": "0.0.12-alpha",
+  "version": "0.0.11-alpha",
   "description": "Connect to various library catalogs",
   "main": "main.js",
   "scripts": {
@@ -21,7 +21,8 @@
     "electron": "^44.4.3",
     "electron-builder": "^26.15.3",
     "eslint": "^10.11.0",
-    "globals": "^17.12.0"
+    "globals": "^17.12.0",
+    "jest": "^30.5.2"
   },
   "dependencies": {
     "@xmldom/xmldom": "^0.9.12",
@@ -63,6 +64,7 @@
         "dmg",
         "zip"
       ],
+      "artifactName": "LibLookup-MacOS-Setup.${ext}",
       "icon": "images/LL-icon.icns",
       "notarize": true,
       "category": "public.app-category.utilities",
