@@ -34,7 +34,7 @@
     "jsonpath-plus": "^10.4.0",
     "marcjs": "^3.0.2",
     "rxjs": "^7.8.2",
-    "xmldom": "^0.6.0",
+    "@xmldom/xmldom": "^0.7.5",
     "xpath": "^0.0.34"
   },
   "type": "module",
