@@ -1,9 +1,8 @@
 import { SRUQuery } from './SRUQuery.js'
-import { DOMParser } from 'xmldom'
+import { DOMParser } from '@xmldom/xmldom'
 import * as xpath from 'xpath'
 
 const SRU_QUERY_MAX = 10000
-const SRU_PAGE_SIZE = 50
 const MMS_ID_MAX = 999999999999
 const ACCELERATE_FACTOR = 5
 
@@ -78,14 +77,14 @@ export class SRUClient {
         }
         var allRecords = []
         var allHoldings = []
-        for(var i = 0; i < urls.length; i++) {
+        for(i = 0; i < urls.length; i++) {
             const thisSegmentURL = urls[i]
             console.log(thisSegmentURL)
             const segmentResponse = await fetch(thisSegmentURL)
             const segmentText = await segmentResponse.text()
             const segmentXML = parser.parseFromString(segmentText, "text/xml");
             var records = selectWithNs('//srw:searchRetrieveResponse/srw:records/srw:record/srw:recordData/marc:record', segmentXML)
-            records = records.map(record => record.toString().replaceAll(/<datafield ([^>]*) (tag=\"...\")/g,'<datafield $2 $1'))
+            records = records.map(record => record.toString().replaceAll(/<datafield ([^>]*) (tag="...")/g,'<datafield $2 $1'))
             records = records.map(record => record.replaceAll(/<subfield([^>]*)\/>/g, '<subfield$1></subfield>'))
             allRecords.push(...records)
         
@@ -101,8 +100,8 @@ export class SRUClient {
                 //if query contains a barcode, only include item records with that barcode
                 if(sruQuery.barcode) {
                     holdingsRecords.forEach(holding =>  {
-                        var copies = []
-                        var components = []
+                        var copies
+                        var components
                         if(sruQuery.barcode == "[empty]") {
                             copies = selectWithNs(`.//isohold:copyInformation[boolean(isohold:pieceIdentifier/isohold:value)]`,holding)
                             components = selectWithNs(`.//isohold:component[boolean(isohold:pieceIdentifier/isohold:value)]`,holding)

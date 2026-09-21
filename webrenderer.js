@@ -17,7 +17,6 @@ function populateForm() {
   urlParams.forEach((value, key) => {
     if(key === "catalog") {
         document.getElementById("catalog").value = value
-        catalog = value
     } else if(key === "q") {
         document.getElementById("queryString").value = value
         var searchTerms = document.getElementById("searchTerms")
@@ -36,10 +35,10 @@ function populateForm() {
         document.getElementById("operator").disabled = false
     } else if(key === "displayFields") {
         document.getElementById("displayFields").value = value
-        displayFields = value
+        var displayFields = value
         const resultFieldsList = document.getElementById("resultFieldsList")
         const fieldList = decodeURIComponent(displayFields).split("|")
-        for(var i = 0; i < fieldList.length; i++) {
+        for(i = 0; i < fieldList.length; i++) {
             resultFieldsList.append(new Option(fieldList[i],fieldList[i]))
         }
         document.getElementById("deleteResultButton").disabled = false
@@ -149,7 +148,6 @@ function download(format) {
             if(abort) {
                 return
             }
-            const contentType = (format == 'csv') ? 'text/csv; charset=utf-8' : 'application/mrc'
             const recSeparator = (format == 'csv') ? "\n" : "\x1D"
             const fileBlob = new Blob([
                 ((format == 'csv') ? "\uFEFF" : '') + 
@@ -174,9 +172,9 @@ function download(format) {
                 var completeCount = Math.min(qi*increment,resultCount)
                 downloadStatus.innerHTML = `Downloaded ${completeCount} of ${resultCount} records`
                 readyForNext = true
-                var recs = []
+                var recs
                 if(format == 'csv') {
-                    var recs = resp.split('\n').map(rec => rec.replace(/^[^,]+,/,''))
+                    recs = resp.split('\n').map(rec => rec.replace(/^[^,]+,/,''))
                     if(qi > 1) {
                         recs.shift()
                     }

@@ -27,11 +27,11 @@ export class CustomQuery {
             }   
                 
             if(index == 'link') {       
-                if(searchTerm.match(/^\".*\"$/)) {
-                    searchTerm = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
+                if(searchTerm.match(/^".*"$/)) {
+                    searchTerm = searchTerm.replace(/^"/,"").replace(/"$/,"")
                 }
                 searchTerm = searchTerm.replaceAll("\"\"","\"")      
-                searchTerm = searchTerm.replace(/^http[^\?]*\?/,'')
+                searchTerm = searchTerm.replace(/^http[^?]*\?/,'')
                 searchTerm = searchTerm.replace(/${config.pageParam}=[^=]*/,'')
                 searchTerm = searchTerm.replace(/${config.maxRecsParam}=[^=]*/,'')
                 if(Object.hasOwn(config,"catalogLinkParams")) {
@@ -42,14 +42,14 @@ export class CustomQuery {
                 return
             }
             else if(index == "raw") {     
-                if(searchTerm.match(/^\".*\"$/)) {
-                    searchTerm = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
+                if(searchTerm.match(/^".*"$/)) {
+                    searchTerm = searchTerm.replace(/^"/,"").replace(/"$/,"")
                 }           
                 searchTerm = searchTerm.replaceAll("\"\"","\"")
             }
             else if(!relator.includes('=')) {
-                if(searchTerm.match(/^\".*\"$/)) {
-                    searchTerm = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
+                if(searchTerm.match(/^".*"$/)) {
+                    searchTerm = searchTerm.replace(/^"/,"").replace(/"$/,"")
                 }
             }  
             const mappedRelator = Object.hasOwn(this.relators,relator) ? this.relators[relator] : this.relators['default'] 

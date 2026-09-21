@@ -1,5 +1,5 @@
 import { CustomQuery } from './CustomQuery.js'
-import { DOMParser } from 'xmldom'
+import { DOMParser } from '@xmldom/xmldom'
 import * as xpath from 'xpath'
 import { JSONPath } from 'jsonpath-plus'
 
@@ -29,7 +29,7 @@ export class CustomClient {
         if(Object.hasOwn(this.config,'catalogLinkUrl')) {
             this.catalogLink = this.config.catalogLinkUrl
             if(customQuery.isCatalogLink) {
-                this.catalogLink = this.catalogLink.replace(/[^\?]*$/,"") + 
+                this.catalogLink = this.catalogLink.replace(/[^?]*$/,"") + 
                                     customQuery.queryString.replaceAll("\"","%22")
             } else {
                 this.catalogLink += encodeURIComponent(customQuery.queryString)
@@ -38,7 +38,7 @@ export class CustomClient {
         if(getTotalCount) {
             var countUrl = this.config.resultCountBaseUrl 
             if(customQuery.isCatalogLink) {
-                countUrl = countUrl.replace(/[^\?]*$/,"") + customQuery.queryString
+                countUrl = countUrl.replace(/[^?]*$/,"") + customQuery.queryString
             } else {
                 countUrl += encodeURIComponent(customQuery.queryString) 
             }
@@ -56,7 +56,7 @@ export class CustomClient {
         var pageno = Math.ceil(startRecord / maximumRecords)
         var queryUrl = this.config.recordsBaseUrl 
         if(customQuery.isCatalogLink) {
-            queryUrl = queryUrl.replace(/[^\?]*$/,"") + customQuery.queryString
+            queryUrl = queryUrl.replace(/[^?]*$/,"") + customQuery.queryString
         } else {
             queryUrl += encodeURIComponent(customQuery.queryString)
         }
@@ -100,14 +100,14 @@ export class CustomClient {
         } else {
             const responseXML = parser.parseFromString(recordsText, "text/xml");
                 
-            var records = []
+            var records
             if(this.config.namespaces) {
                 const selectWithNs = xpath.useNamespaces(this.config.namespaces)        
                 records = selectWithNs('//marc:record', responseXML)
             } else {
                 records = xpath.select('//marc:record', responseXML)
             }
-            records = records.map(record => record.toString().replaceAll(/<datafield ([^>]*) (tag=\"...\")/g,'<datafield $2 $1'))
+            records = records.map(record => record.toString().replaceAll(/<datafield ([^>]*) (tag="...")/g,'<datafield $2 $1'))
 
             return {numberOfRecords: totalRecords, records: records}
         }

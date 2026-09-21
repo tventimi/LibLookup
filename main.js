@@ -4,19 +4,14 @@ import { SRUClient } from './SRUClient.js';
 import { CustomClient } from './CustomClient.js';
 import { MenuMap } from './MenuMap.js'
 import { Marc } from 'marcjs'
-import * as readline from 'node:readline';
 import * as fs from 'node:fs';
 import * as path from 'path';
 import * as https from 'https'
-import { fileURLToPath } from 'node:url';
-import { Readable } from 'node:stream'
 import { shell, dialog } from 'electron'
-import { Subject, finalize }  from 'rxjs'
+import { Subject }  from 'rxjs'
 import started from 'electron-squirrel-startup';
 import * as csv from 'csv/sync'
-import { stringify } from 'csv/sync'
 import * as cheerio from 'cheerio'
-import { start } from 'node:repl';
 import autoUpdaterPkg from 'electron-updater';
 import { JSONPath } from 'jsonpath-plus'
 import { decode } from 'html-entities';
@@ -48,11 +43,11 @@ var catalogs = null
 var catalogID = ""
 var catalogLink = ""
 var startAtRecord = 1
-var expectedResultCount = defaultPageSize
 var win
 var z3950client
 var sruClient
 var customClient
+var server
 
 const defaultResults = [
     {name:"Record ID",code:"recno",value:"001"},
@@ -280,11 +275,11 @@ const createWindow = () => {
             displayResults = latestResults.filter((rec) => {
               if(catalogs[catalog].resultFormat == 'json') {
                 return Object.hasOwn(rec,'id') && rec.id.includes(decodeURIComponent(query)
-                        .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
+                        .replace(/.*recno = "?([^&"]+).*/,"$1"))
               } else {
                 return rec.get('001').length > 0 && 
                       rec.get('001')[0].value.includes(decodeURIComponent(query)
-                        .replace(/.*recno = \"?([^&\"]+).*/,"$1"))
+                        .replace(/.*recno = "?([^&"]+).*/,"$1"))
               }       
             })
             if(displayResults.length == 1) {
@@ -297,7 +292,7 @@ const createWindow = () => {
           try {
             const catalogType = catalogs[catalog].type
             if(catalogType == "custom") {
-              var customClient = new CustomClient(catalogs[catalog])
+              customClient = new CustomClient(catalogs[catalog])
               customClient.connect().then((success) => {
                 if(success) {
                   var calculateCount = !((catalogID == catalog) && (query == latestQuery))
@@ -322,7 +317,7 @@ const createWindow = () => {
                     resultsStream.next(null)
                   })
                 } else {
-                  resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+                  resultsStream.error('Cannot connect to catalog "' + catalogs[catalog]?.name + '". Please check your configuration or try again later.')
                 }
               })
             } else if(catalogType == "almasru") {
@@ -358,7 +353,7 @@ const createWindow = () => {
                    resultsStream.next(null)
                   })
                 } else {
-                  resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+                  resultsStream.error('Cannot connect to catalog "' + catalogs[catalog]?.name + '". Please check your configuration or try again later.')
                 }
               }).catch((err) => {
                 console.log(err)
@@ -381,7 +376,7 @@ const createWindow = () => {
               
               var interval = setInterval(async () => {
                 if(z3950client.latestError != "" && z3950client.latestError != "wcholdingslimit") {
-                  resultsStream.error('Cannot connect to catalog \"' + catalogs[catalog]?.name + '\". Please check your configuration or try again later.')
+                  resultsStream.error('Cannot connect to catalog "' + catalogs[catalog]?.name + '". Please check your configuration or try again later.')
                   clearInterval(interval)  
                 }
                 if(z3950client?.isConnected() && !awaitingResults) {                   
@@ -436,7 +431,7 @@ const createWindow = () => {
       },intervalLength) 
     })
 
-    const server = https.createServer(serverOptions, (request, response) => { 
+    server = https.createServer(serverOptions, (request, response) => { 
       requestStream.next({req: request, resp: response})               
     })
     server.listen(libLookupPort, libLookupDomain, () => {
@@ -493,11 +488,11 @@ function filterJSONRecord(jsonRecord,fields = [],mapping = []) {
 
 function convertEmbeddedJSON(jsonRecord) {
   var jsonString = JSON.stringify(jsonRecord)
-  var embeddedObjects = jsonString.match(/\"\{\\\"[^\}]*\}\"/g)
+  var embeddedObjects = jsonString.match(/"\{\\"[^}]*\}"/g)
   if(embeddedObjects) {
     for(var i = 0; i < embeddedObjects.length; i++) {
       jsonString = jsonString.replace(embeddedObjects[i],embeddedObjects[i]
-          .replaceAll('\\\"','\"').replace(/^\"/,'').replace(/\"$/,''))
+          .replaceAll('\\"','"').replace(/^"/,'').replace(/"$/,''))
     }
   } 
   return JSON.parse(jsonString)
@@ -652,7 +647,7 @@ function renderRecords(records,format = 'html') {
     } else {
       rendered += "<table class='marc'><th class='viewlink'></th>"
       rendered += "<th>" + records[0].slice(1).join("</th><th>") + "</th>"
-      for(var i = 1; i < records.length; i++) {
+      for(i = 1; i < records.length; i++) {
         records[i] = records[i].map(rec => escapeHtml(rec))
         rendered += "<tr>"
         rendered += `<td class='viewlink'><a href='index.html?singleRecord=true&catalog=${catalogID}` + 
@@ -746,7 +741,7 @@ app.on('window-all-closed', () => {
   app.quit()
 })
 
-ipcMain.on('button-clicked', (event) => {
+ipcMain.on('button-clicked', () => {
     shell.openExternal(baseURL)
 });
 

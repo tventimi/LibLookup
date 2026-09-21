@@ -24,7 +24,7 @@ export class SRUQuery {
             var searchTerm = queryTokens[i+2]
 
             if(index.includes('barcode')) {
-                this.barcode = searchTerm.replace(/^\"/,"").replace(/\"$/,"")
+                this.barcode = searchTerm.replace(/^"/,"").replace(/"$/,"")
             }
 
             if(relator == "empty") {
@@ -36,8 +36,8 @@ export class SRUQuery {
                 this.queryString += " "
             }
             if(index == "raw") {
-                if(searchTerm.match(/^\".*\"$/)) {
-                    searchTerm = searchTerm.replace(/^\"/,'').replace(/\"$/,'')
+                if(searchTerm.match(/^".*"$/)) {
+                    searchTerm = searchTerm.replace(/^"/,'').replace(/"$/,'')
                 }
                 searchTerm = searchTerm.replaceAll("\"\"","\"")                
                 this.queryString += "(" + searchTerm + " )"

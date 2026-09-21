@@ -2,7 +2,6 @@ var catalogSelect = null
 var indexMenu = null
 var relatorMenu = null
 var queryTerm = null
-var secondaryIndex = ""
 
 var menuMap = {}
 
@@ -58,7 +57,7 @@ function init() {
             document.getElementById("addTermButton").disabled = false
         } 
     })
-    queryTerm.addEventListener("input", function(event) {
+    queryTerm.addEventListener("input", function() {
         if(queryTerm.value.length > 0 && !document.getElementById("queryString").value.startsWith("link")) {
             document.getElementById("addTermButton").disabled = false
         } else {
@@ -73,9 +72,10 @@ function init() {
         const filteredList = menuMap[catalogCode].secondary.filter(index => 
             (index.code + "|" + index.name).toLowerCase().includes(normInput) 
         )
+        var secondaryIndexList = document.getElementById("secondaryIndexList")
         secondaryIndexList.innerHTML = ""
         for(var j = 0; j < filteredList.length; j++) {
-            sindex = filteredList[j]
+            var sindex = filteredList[j]
             secondaryIndexList.append(new Option(`${sindex.name} (${sindex.code})`,sindex.code))
         }
     })
@@ -122,7 +122,6 @@ function init() {
     document.getElementById("closeSecondaryIndexDialog").addEventListener('click',function() {
         document.getElementById("secondaryIndexDialog").close()
         indexMenu.selectedIndex = 0
-        secondaryIndex = ""
     })
 
     const resultField = document.getElementById("resultField")
@@ -166,7 +165,7 @@ function updateMenus(catalogCode) {
             secondaryIndexList.innerHTML = ""
             menuMap[catalogCode].secondary.sort((a,b) => a.name.localeCompare(b.name))
             for(var j = 0; j < menuMap[catalogCode].secondary.length; j++) {
-                sindex = menuMap[catalogCode].secondary[j]
+                var sindex = menuMap[catalogCode].secondary[j]
                 secondaryIndexList.append(new Option(`${sindex.name} (${sindex.code})`,sindex.code))
             }
         }
@@ -179,7 +178,7 @@ function updateMenus(catalogCode) {
         const resultFieldsMenu =  document.getElementById("resultField") 
         resultFieldsMenu.innerHTML = ""
         const resultContents = menuMap[catalogCode].resultFields 
-        for(var i = 0; i < resultContents.length; i++) {
+        for(i = 0; i < resultContents.length; i++) {
             resultFieldsMenu.appendChild(new Option(resultContents[i].name,resultContents[i].code))
         }
         setCustomResult(resultFieldsMenu[0].value)
@@ -215,8 +214,8 @@ function addTerm() {
     var term = document.getElementById("queryTerm").value;
     const index = document.getElementById("index").value
     term = decodeURIComponent(term)
-    if(term.match(/^\".*\"$/)) {
-        term = term.replace(/^\"/,"").replace(/\"$/,"")
+    if(term.match(/^".*"$/)) {
+        term = term.replace(/^"/,"").replace(/"$/,"")
     }
     if(term === "") {
         return;
@@ -252,9 +251,9 @@ function deleteTerm() {
     var searchTerms = document.getElementById("searchTerms")
     var queryTerm = searchTerms.options[searchTerms.selectedIndex].value
     var queryTokens = tokenize(queryTerm)
-    var queryTerm = queryTokens.pop() 
-    if(queryTerm.match(/^\".*\"$/)) {
-        queryTerm = queryTerm.replace(/^\"/,'').replace(/\"$/,'')
+    queryTerm = queryTokens.pop() 
+    if(queryTerm.match(/^".*"$/)) {
+        queryTerm = queryTerm.replace(/^"/,'').replace(/"$/,'')
     }
     document.getElementById("queryTerm").value = queryTerm.replaceAll("\"\"","\"")
     

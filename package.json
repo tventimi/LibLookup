@@ -1,10 +1,12 @@
 {
   "name": "LibLookup",
-  "version": "0.0.11-alpha",
+  "version": "0.0.12-alpha",
   "description": "Connect to various library catalogs",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",

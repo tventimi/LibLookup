@@ -38,7 +38,7 @@ export class Z3950Query {
     constructor(query, config = null, isRaw = false) {
         var queryTokens = tokenize(query)      
         if(isRaw){
-            this.rawZ3950toQuery(query)
+            this.rawZ3950toQuery(query,config)
             return
         }
         for(var i = 0; i < queryTokens.length; i += 4) {
@@ -78,8 +78,8 @@ export class Z3950Query {
                 }
                 return
             } else {
-                if(searchTerm.match(/^\".*\"$/)) {
-                    searchTerm = searchTerm.replace(/^\"/,'').replace(/\"$/,'')
+                if(searchTerm.match(/^".*"$/)) {
+                    searchTerm = searchTerm.replace(/^"/,'').replace(/"$/,'')
                 }
                 searchTerm = searchTerm.replaceAll("\"\"","\"")
                 if(searchTerm == "") {
@@ -127,7 +127,7 @@ export class Z3950Query {
         }              
     }
 
-    rawZ3950toQuery(query) {
+    rawZ3950toQuery(query,config) {
         var queryTokens = tokenize(query)
         var isAttribute = false
         for(var i = 0; i < queryTokens.length; i++) {
@@ -167,8 +167,8 @@ export class Z3950Query {
                     if(this.attributes.length == 0) {
                         this.attributes.push({type: 1, value: 1016})
                     }
-                    if(token.match(/^\".*\"$/)) {
-                        this.term = token.replace(/^\"/, '').replace(/\"$/, '')
+                    if(token.match(/^".*"$/)) {
+                        this.term = token.replace(/^"/, '').replace(/"$/, '')
                     }
                     break
                 }

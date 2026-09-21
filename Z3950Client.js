@@ -53,7 +53,7 @@ export class Z3950Client {
         if(this.isConnected()) {
             this.disconnect()
         }
-        var success = this.initiateConnection()
+        this.initiateConnection()
         this.latestQuery = ""
         
         this.client.on('connect', () => {
@@ -74,17 +74,15 @@ export class Z3950Client {
             if(response.result) {
                 var respCode = response.result.idBlock.tagNumber
                 var respValue = ""
-                var respType = respCode
+                var respBody
                 console.log(respCode)
                 switch(respCode) {
-                    case 21:
-                        respType = 'initResponse'  
+                    case 21: //initResponse  
                         console.log(`Connected to ${this.config.host} on port ${this.config.port}`);
                         this.inSession = true
                         break;
-                    case 23:
-                        respType = 'searchResponse'
-                        var respBody = response.result.valueBlock.value
+                    case 23: //searchResponse
+                        respBody = response.result.valueBlock.value
                         for(var i = 0; i < respBody.length; i++) {
                             if(respBody[i].idBlock.tagNumber == 23) {
                                 var numResults = 0
@@ -98,17 +96,16 @@ export class Z3950Client {
                         }
                         console.log(`Search returned ${this.latestResultCount} record(s)`)
                         break;
-                    case 25:
-                        respType = "presentResponse"
-                        var respBody = response.result.valueBlock.value
-                        for(var i = 0; i < respBody.length; i++) {
+                    case 25: //presentResponse
+                        respBody = response.result.valueBlock.value
+                        for(i = 0; i < respBody.length; i++) {
                             if(respBody[i].idBlock.tagNumber == 24) {
                                 console.log(respBody[i].valueBlock.valueHexView[0] + " record(s) returned")
                             }
                             else if(respBody[i].idBlock.tagNumber == 28) {
                                 respValue = ""
                                 var allRecords = respBody[i].valueBlock.value
-                                for(var j = 0; j < allRecords.length; j++) {
+                                for(j = 0; j < allRecords.length; j++) {
                                     var rec = allRecords[j].valueBlock.value[1].valueBlock.value[0].valueBlock.value[0].valueBlock.value[1]
                                     respValue += String.fromCodePoint(...rec.valueBlock.valueHexView)
                                 }
@@ -152,6 +149,7 @@ export class Z3950Client {
         //wait for response from initRequest, return connection status
         var interval = setInterval(() => {
             if(!this.awaitingResponse) {
+                clearInterval(interval)
                 return this.isConnected()
             }
         },intervalLength)
@@ -316,7 +314,7 @@ export class Z3950Client {
 
     zQueryToASN1(zQuery) {
         var encoder = new TextEncoder()
-        var asn1 = null
+        var asn1
         if(zQuery.type == "operand" || zQuery.type == "empty") {
             asn1 = {id: 0, value: [ //operand
                     {id: 102, value: [ //attributes plus term
@@ -410,7 +408,7 @@ export class Z3950Client {
                 byteLength = (byteLength > 0) ? byteLength : 1;
             
                 var byteArray = []            
-                for(var i = 0; i < byteLength; i++) {
+                for(i = 0; i < byteLength; i++) {
                     byteArray.unshift((newValue >> (i*8)) & 0xFF)
                 }
                 newValue = new Uint8Array(byteArray)     

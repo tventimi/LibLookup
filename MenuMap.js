@@ -1,4 +1,4 @@
-import { DOMParser } from 'xmldom'
+import { DOMParser } from '@xmldom/xmldom'
 import * as xpath from 'xpath'
 import zIndexes from './Z3950Indexes.json' with { type: 'json' };
 
