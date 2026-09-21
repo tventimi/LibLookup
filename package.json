@@ -14,7 +14,7 @@
   "author": "Thomas Ventimiglia",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@electron/fuses": "^1.8.0",
+    "@electron/fuses": "^2.0.0",
     "@eslint/css": "^2.0.0",
     "@eslint/js": "^10.0.1",
     "@eslint/json": "^2.1.0",
