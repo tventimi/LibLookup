@@ -1,4 +1,4 @@
-[Windows Version](https://github.com/tventimi/LibLookup/releases/latest/LibLookup-Windows-Setup.exe)
+[Windows Version](https://github.com/tventimi/LibLookup/releases/latest/download/LibLookup-Windows-Setup.exe)
 
-[Mac Version](https://github.com/tventimi/LibLookup/releases/latest/LibLookup-Mac-Setup.exe)
+[Mac Version](https://github.com/tventimi/LibLookup/releases/latest/download/LibLookup-Mac-Setup.exe)
 
