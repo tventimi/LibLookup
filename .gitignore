@@ -4,7 +4,7 @@ webserver/
 out/
 config/*
 dist/
-*.sh
+*.env
 customSign.cjs
 forge.macsigning.txt
 build/entitlements.mac.plist
