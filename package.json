@@ -7,27 +7,19 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
+    "start": "electron .",
     "build": "electron-builder build --publish never",
     "ship": "electron-builder build --publish always"
   },
   "author": "Thomas Ventimiglia",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@electron-forge/cli": "^7.6.1",
-    "@electron-forge/maker-deb": "^7.11.1",
-    "@electron-forge/maker-rpm": "^7.11.1",
-    "@electron-forge/maker-squirrel": "^7.11.1",
-    "@electron-forge/maker-zip": "^7.11.1",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.11.1",
-    "@electron-forge/plugin-fuses": "^7.11.1",
     "@electron/fuses": "^1.8.0",
     "@eslint/css": "^2.0.0",
     "@eslint/js": "^10.0.1",
     "@eslint/json": "^2.1.0",
-    "electron": "^44.0.0",
+    "electron": "^44.4.3",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.11.0",
     "globals": "^17.12.0"
   },
@@ -36,7 +28,6 @@
     "asn1js": "^3.0.6",
     "cheerio": "^1.2.0",
     "csv": "^6.6.0",
-    "electron-squirrel-startup": "^1.0.1",
     "electron-updater": "^6.8.9",
     "html-entities": "^2.6.0",
     "jsonpath-plus": "^10.4.0",
@@ -65,7 +56,7 @@
     "nsis": {
       "differentialPackage": false,
       "createDesktopShortcut": true,
-      "artifactName": "LibLookup-Windows-Setup-${version}.${ext}"
+      "artifactName": "LibLookup-Windows-Setup.${ext}"
     },
     "mac": {
       "target": [

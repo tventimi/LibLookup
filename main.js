@@ -9,7 +9,6 @@ import * as path from 'path';
 import * as https from 'https'
 import { shell, dialog } from 'electron'
 import { Subject }  from 'rxjs'
-import started from 'electron-squirrel-startup';
 import * as csv from 'csv/sync'
 import * as cheerio from 'cheerio'
 import autoUpdaterPkg from 'electron-updater';
@@ -17,7 +16,11 @@ import { JSONPath } from 'jsonpath-plus'
 import { decode } from 'html-entities';
 const { autoUpdater } = autoUpdaterPkg;
 
-if (started) app.quit();
+const appLock = app.requestSingleInstanceLock();
+if (!appLock) {
+  // Another instance is already running, quit this one immediately
+  app.quit();
+}
 
 Menu.setApplicationMenu(null);
 
