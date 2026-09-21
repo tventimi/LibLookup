@@ -63,6 +63,7 @@
         "dmg",
         "zip"
       ],
+      "artifactName": "LibLookup-MacOS-Setup.${ext}",
       "icon": "images/LL-icon.icns",
       "notarize": true,
       "category": "public.app-category.utilities",
