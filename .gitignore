@@ -2,7 +2,8 @@ node_modules
 OLD/*
 webserver/
 out/
-config/*
+config/
+coverage/
 dist/
 *.env
 customSign.cjs

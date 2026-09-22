@@ -32,14 +32,12 @@ export class SRUQuery {
                 searchTerm = "\"\""
             }
 
-            if(queryString != "") {
+            if(this.queryString != "") {
                 this.queryString += " "
             }
             if(index == "raw") {
-                if(searchTerm.match(/^".*"$/)) {
-                    searchTerm = searchTerm.replace(/^"/,'').replace(/"$/,'')
-                }
-                searchTerm = searchTerm.replaceAll("\"\"","\"")                
+                searchTerm = searchTerm.replace(/^"(.*)"$/,"$1")
+                searchTerm = searchTerm.replaceAll('""','"')                
                 this.queryString += "(" + searchTerm + " )"
             } else {
                 const mappedIndex = Object.hasOwn(indexes,index) ? indexes[index] : index

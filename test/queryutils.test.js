@@ -1,16 +1,21 @@
 import { tokenize } from '../queryutils.js';
 
-test('single parameter string', () => {
-  const queryString = 'keyword = BFG'
-  expect(tokenize(queryString)).toEqual(['keyword','=','BFG']);
-});
+describe('Tokenizer used across query classes', () => {
+  test('single parameter string', () => {
+    const tokens = ['keyword','=','BFG']
+    const queryString = tokens.join(' ')
+    expect(tokenize(queryString)).toEqual(tokens);
+  });
 
-test('single parameter string with quotes', () => {
-  const queryString = 'keyword = "Willy Wonka"'
-  expect(tokenize(queryString)).toEqual(['keyword','=','"Willy Wonka"']);
-});
+  test('single parameter string with quotes', () => {
+    const tokens = ['keyword','=','"Willy Wonka"']
+    const queryString = tokens.join(' ')
+    expect(tokenize(queryString)).toEqual(tokens);
+  });
 
-test('multi-parameter string', () => {
-  const queryString = 'author == "Roald Dahl" AND title all "chocolate factory"'
-  expect(tokenize(queryString)).toEqual(['author','==','"Roald Dahl"','AND','title','all','"chocolate factory"']);
+  test('multi-parameter string', () => {
+    const tokens = ['author','==','"Roald Dahl"','AND','title','all','"chocolate factory"']
+    const queryString = tokens.join(' ')
+    expect(tokenize(queryString)).toEqual(tokens);
+  });
 });
