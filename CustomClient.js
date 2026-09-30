@@ -87,7 +87,7 @@ export class CustomClient {
                     if(wrapper.startsWith("json:")) { 
                         const wrapperPath = wrapper.replace(/^json:/, '')  
                         recordsArray = recordsArray.map((rec) => { return JSONPath({options:{wrap:false},path:wrapperPath,json:rec})[0] }) 
-                    }
+                    } 
                 }
             }
             recordsText = recordsArray.join("\n")
@@ -98,6 +98,8 @@ export class CustomClient {
         if(this.config.resultFormat == 'json') {
             return {numberOfRecords: totalRecords, records: recordsArray}
         } else {
+            recordsText = recordsText.replaceAll(/<\?xml[^>]*\?>/gs,"")
+            recordsText = recordsText.replaceAll(/<\/collection>\s*<collection[^>]*>/gs,"")
             const responseXML = parser.parseFromString(recordsText, "text/xml");
                 
             var records
