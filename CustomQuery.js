@@ -8,16 +8,14 @@ export class CustomQuery {
 
     constructor(queryString,config) {
         var queryTokens = tokenize(queryString)
-        if(config.indexes) {
-            config.indexes.forEach(entry => {
-                if(Object.hasOwn(entry,"code") && Object.hasOwn(entry, "paramName")) {
-                    this.indexes[entry.code] = entry.paramName
-                }
-            })
-        }
-        if(config.relators) {
-            this.relators = config.relators
-        }
+        config?.indexes?.forEach(entry => {
+            if(Object.hasOwn(entry,"code") && Object.hasOwn(entry, "paramName")) {
+                this.indexes[entry.code] = entry.paramName
+            }
+        })
+
+        this.relators = config?.relators
+
         for(var i = 0; i < queryTokens.length; i += 4) {
             var index = queryTokens[i]
             var relator = queryTokens[i+1]
@@ -27,30 +25,24 @@ export class CustomQuery {
             }   
                 
             if(index == 'link') {       
-                if(searchTerm.match(/^".*"$/)) {
-                    searchTerm = searchTerm.replace(/^"/,"").replace(/"$/,"")
-                }
+                searchTerm = searchTerm.replace(/^"(.*)"$/,"$1")
                 searchTerm = searchTerm.replaceAll("\"\"","\"")      
                 searchTerm = searchTerm.replace(/^http[^?]*\?/,'')
-                searchTerm = searchTerm.replace(/${config.pageParam}=[^=]*/,'')
-                searchTerm = searchTerm.replace(/${config.maxRecsParam}=[^=]*/,'')
+                searchTerm = searchTerm.replace(new RegExp(`&${config.pageParam}=[^&]*`),'')
+                searchTerm = searchTerm.replace(new RegExp(`&${config.maxRecsParam}=[^&]*`),'')
                 if(Object.hasOwn(config,"catalogLinkParams")) {
-                    searchTerm += "&" + config.catalogLinkParams
+                    searchTerm += config?.catalogLinkParams
                 }
                 this.queryString = searchTerm
                 this.isCatalogLink = true
                 return
             }
             else if(index == "raw") {     
-                if(searchTerm.match(/^".*"$/)) {
-                    searchTerm = searchTerm.replace(/^"/,"").replace(/"$/,"")
-                }           
+                searchTerm = searchTerm.replace(/^"(.*)"$/,"$1")          
                 searchTerm = searchTerm.replaceAll("\"\"","\"")
             }
             else if(!relator.includes('=')) {
-                if(searchTerm.match(/^".*"$/)) {
-                    searchTerm = searchTerm.replace(/^"/,"").replace(/"$/,"")
-                }
+                searchTerm = searchTerm.replace(/^"(.*)"$/,"$1")    
             }  
             const mappedRelator = Object.hasOwn(this.relators,relator) ? this.relators[relator] : this.relators['default'] 
 
