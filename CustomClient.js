@@ -97,9 +97,9 @@ export class CustomClient {
         }
         if(this.config.resultFormat == 'json') {
             return {numberOfRecords: totalRecords, records: recordsArray}
-        } else {
+        } else { //xml
             recordsText = recordsText.replaceAll(/<\?xml[^>]*\?>/gs,"")
-            recordsText = recordsText.replaceAll(/<\/collection>\s*<collection[^>]*>/gs,"")
+            recordsText = `<collection>${recordsText}</collection>`
             const responseXML = parser.parseFromString(recordsText, "text/xml");
                 
             var records
