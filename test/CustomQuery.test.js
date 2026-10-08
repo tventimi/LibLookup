@@ -16,8 +16,11 @@ describe('Custom Query', () => {
     }
   }
 
+  const title = "The Epic Rise and Devastating Fall of LibLookup"
+  const author = "Thomas Ventimiglia"
+  const subject = "Information Science -- Cautionary Tales"
+
   test('single parameter string, using relator without "="', () => {
-    const title = "How LibLookup Changed My Life"
     const inputQueryString = `title all "${title}"`
     const outputQueryString = `Title:${title}`
     const customQuery = new CustomQuery(inputQueryString, config)
@@ -25,8 +28,6 @@ describe('Custom Query', () => {
   });
   
   test('multi-parameter string including "=" and parameter not in config', () => {
-    const title = "The Epic Rise and Devastating Fall of LibLookup"
-    const author = "Thomas Ventimiglia"
     const inputQueryString = `title = "${title}" AND mainAuthor = "${author}"`
     const outputQueryString = `Title="${title}" AND "${author}"`
     const customQuery = new CustomQuery(inputQueryString,config)
@@ -42,6 +43,7 @@ describe('Custom Query', () => {
     const outputQueryString = `${queryString}${config.catalogLinkParams}`
     const customQuery = new CustomQuery(inputQueryString,config)
     const {catalogLinkParams, ...altConfig} = config;
+    //alternate query removes catalogLinkParams from config
     const altCustomQuery = new CustomQuery(inputQueryString,altConfig)
     expect(customQuery.queryString).toBe(outputQueryString);
     expect(customQuery.isCatalogLink).toBe(true);
@@ -49,9 +51,8 @@ describe('Custom Query', () => {
   });
   test('raw query', () => {
     const index = "subject"
-    const searchTerm = "LibLookup -- Cautionary Tales"
-    const inputQueryString = `raw = "${index}:""${searchTerm}"""`
-    const outputQueryString = `${index}:"${searchTerm}"`
+    const inputQueryString = `raw = "${index}:""${subject}"""`
+    const outputQueryString = `${index}:"${subject}"`
     const customQuery = new CustomQuery(inputQueryString,config)
     expect(customQuery.queryString).toBe(outputQueryString);
   });

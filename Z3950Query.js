@@ -34,102 +34,14 @@ export class Z3950Query {
     attributes = null
     term = null
     queryString = ""
+    config = null
 
-    constructor(query, config = null, isRaw = false) {
-        var queryTokens = tokenize(query)      
-        if(isRaw){
-            this.rawZ3950toQuery(query,config)
-            return
-        }
-        for(var i = 0; i < queryTokens.length; i += 4) {
-            var index = queryTokens[i]
-            var relator = queryTokens[i+1]
-            var searchTerm = queryTokens[i+2]
-
-            if(i+3 < queryTokens.length) {
-                this.type = "operator"
-                var operator = queryTokens.at(-4).toLowerCase().replace("not","andnot")
-                this.operator = operators[operator]
-                this.leftOperand = new Z3950Query(queryTokens.slice(0,-4).join(" "),config)
-                this.rightOperand =  new Z3950Query(queryTokens.slice(-3).join(" "),config)
-                if(this.leftOperand.type != "empty" && this.rightOperand.type != "empty") {
-                    this.queryString = this.leftOperand.queryString + " " + queryTokens[i+3] + " " + this.rightOperand.queryString
-                } else if(this.leftOperand.type == "empty" && this.rightOperand.type == "empty") {
-                    this.type = "operand"
-                    this.term = ""
-                    this.leftOperand = null
-                    this.rightOperand = null  
-                    this.attributes = []
-                    this.queryString = ""
-                } else { //one empty term
-                    var singleOperand = (this.leftOperand.type != "empty") ? this.leftOperand : this.rightOperand
-                    this.type = singleOperand.type
-                    this.queryString = singleOperand.queryString
-                    if(this.type == 'operand') {
-                        this.attributes = singleOperand.attributes
-                        this.term = singleOperand.term  
-                        this.leftOperand = null
-                        this.rightOperand = null                  
-                    } else {
-                        this.operator = singleOperand.operator
-                        this.leftOperand = singleOperand.leftOperand
-                        this.rightOperand = singleOperand.rightOperand
-                    }
-                }
-                return
-            } else {
-                if(searchTerm.match(/^".*"$/)) {
-                    searchTerm = searchTerm.replace(/^"/,'').replace(/"$/,'')
-                }
-                searchTerm = searchTerm.replaceAll("\"\"","\"")
-                if(searchTerm == "") {
-                    this.type = "empty"
-                    this.attributes = []
-                    return
-                }
-                this.type = "operand"
-                if(index == "raw") {
-                    var zQuery = new Z3950Query(searchTerm,config.details,true)
-                    this.type = zQuery.type
-                    this.queryString = zQuery.queryString
-                    if(zQuery.type == 'operand') {
-                        this.attributes = zQuery.attributes
-                        this.term = zQuery.term                    
-                    } else {
-                        this.operator = zQuery.operator
-                        this.leftOperand = zQuery.leftOperand
-                        this.rightOperand = zQuery.rightOperand
-                    }
-                } else {
-                    var useAttribute = Object.hasOwn(indexes, index) ? indexes[index] : parseInt(index)
-                    if(index == "recno" && config.details?.recnoIndex) {
-                        useAttribute = config.details.recnoIndex
-                    }
-                    this.attributes = [{type: 1, value: useAttribute}]
-
-                    if(Object.hasOwn(relators,relator)) {
-                        this.attributes.push({type:2, value: relators[relator]})
-                    }
-
-                    if(relator == "=") {
-                        this.attributes.push({type: 4, value: 1})
-                    } else if(config.details?.defaultStructure) {
-                        this.attributes.push({type: 4, value: config.details.defaultStructure})
-                    }
-                    this.term = searchTerm
-                    if(index == "recno" && config.details?.recnoNumeric) {
-                        this.term = this.term.replaceAll(/[^0-9]/g,"")
-                    }
-                    this.queryString = queryTokens.slice(0,3).join(" ")
-                }
-                break
-            }
-        }              
-    }
-
-    rawZ3950toQuery(query,config) {
+    constructor(query, config = null, isPQF = false) {
+        this.config = config
+        query = isPQF ? query : this.convertToPQF(query)
         var queryTokens = tokenize(query)
         var isAttribute = false
+        
         for(var i = 0; i < queryTokens.length; i++) {
             var token = queryTokens[i]
             this.queryString += (this.queryString != "" ? " " : "") + token
@@ -142,21 +54,41 @@ export class Z3950Query {
                     this.operator = operators[token.substring(1).toLowerCase().replace(/^not$/,"andnot")]
                     this.leftOperand = new Z3950Query(queryTokens.slice(i + 1).join(" "),config,true)
                     this.queryString += " " + this.leftOperand.queryString
-                    var lengthSoFar = this.queryString.length
+                    var lengthSoFar = this.queryString.length+1
                     this.rightOperand =  new Z3950Query(query.substring(lengthSoFar),config,true)
-                    this.queryString += " " + this.rightOperand.queryString
+                    
+                    if(this.leftOperand.type != "empty" && this.rightOperand.type != "empty") { //neither term empty
+                        this.queryString += " " + this.rightOperand.queryString                
+                    } else if(this.leftOperand.type == "empty" && this.rightOperand.type == "empty") { //both terms empty
+                        this.type = "operand"
+                        this.term = ""
+                        this.leftOperand = null
+                        this.rightOperand = null  
+                        this.attributes = []
+                        this.queryString = ""
+                    } else { //one empty term
+                        var singleOperand = (this.leftOperand.type != "empty") ? this.leftOperand : this.rightOperand
+                        this.type = singleOperand.type
+                        this.queryString = singleOperand.queryString
+                        if(this.type == 'operand') {
+                            this.attributes = singleOperand.attributes
+                            this.term = singleOperand.term  
+                            this.leftOperand = null
+                            this.rightOperand = null                  
+                        } else {
+                            this.operator = singleOperand.operator
+                            this.leftOperand = singleOperand.leftOperand
+                            this.rightOperand = singleOperand.rightOperand
+                        }
+                    }
                     return
                 }
             } else {
-                if(!this.type) {
-                    this.type = "operand"
-                }
+                this.type = "operand"
                 if(!this.attributes) {
                     this.attributes = []
                 }                    
-                if(!this.term) {
-                    this.term = ""
-                }
+                this.term = ""
                 if(isAttribute) {
                     isAttribute = false
                     var m = /([0-9]+)=([0-9]+)/.exec(token)
@@ -164,15 +96,82 @@ export class Z3950Query {
                         this.attributes.push({type: parseInt(m[1]), value: parseInt(m[2])})
                     }
                 } else {
-                    if(this.attributes.length == 0) {
+                    if(this.attributes.filter(a => a.type === 1).length == 0) {
                         this.attributes.push({type: 1, value: 1016})
                     }
-                    if(token.match(/^".*"$/)) {
-                        this.term = token.replace(/^"/, '').replace(/"$/, '')
+                    this.term = token.replace(/^"(.*)"$/, '$1')
+                    if(this.term == "") {
+                        this.type = "empty"
+                        this.attributes = []
+                        return
                     }
                     break
                 }
             }
+        }
+    }
+
+    convertToPQF(query, precedences = ["or","and","andnot"]) {
+        const queryTokens = tokenize(query)
+
+        if(queryTokens.length == 3) {
+            const index = queryTokens[0]
+            const relator = queryTokens[1]
+            const searchTerm = queryTokens[2] 
+            if(index == "raw") {
+                return searchTerm.replace(/^"(.*)"$/,'$1').replaceAll("\"\"","\"")
+            }
+            var pqfString = ""
+            var useAttribute = Object.hasOwn(indexes, index) ? indexes[index] : parseInt(index)
+            useAttribute = (Number.isNaN(useAttribute) ? 1016 : useAttribute)
+
+            if(index == "recno" && this.config?.details?.recnoIndex) {
+                useAttribute = this.config.details.recnoIndex
+            }
+            pqfString = `@attr 1=${useAttribute} `            
+            
+            if(Object.hasOwn(relators,relator)) {
+                pqfString += `@attr 2=${relators[relator]} `
+            }
+            if(relator == "=") {
+                pqfString += "@attr 4=1 "
+            } else if(this.config?.details?.defaultStructure) {
+                pqfString += `@attr 4=${this.config.details.defaultStructure} `
+            }    
+            if(index == "recno" && this.config?.details?.recnoNumeric) {
+                pqfString += searchTerm.replaceAll(/[^0-9]/g,"")
+            } else {
+                pqfString += searchTerm
+            }
+            return pqfString
+        } else {
+            var segments = []
+            var currentSegment = "" 
+            const currentOperator = (precedences.length > 0) ? precedences[0] : "" 
+            for(var i = 0; i < queryTokens.length; i += 4) {   
+                currentSegment += queryTokens.slice(i, i + 3).join(" ")             
+                const operator = (queryTokens[i+3] ?? "").toLowerCase().replace(/^not$/,"andnot")
+                if(operator == currentOperator || operator == "") {
+                    if(precedences.length == 0) {
+                        segments.push(currentSegment)
+                    } else {
+                        segments.push(this.convertToPQF(currentSegment, precedences.slice(1)))
+                    }
+                    currentSegment = ""
+                } else {
+                    currentSegment += ` ${operator} `
+               }
+            }
+            var pqfString = ""
+            for(var i = 0; i < segments.length; i++) {
+                const segment = segments[i]
+                if(pqfString != "") {
+                    pqfString = `@${currentOperator.toLowerCase()} ${pqfString} ${segment}`
+                } else {
+                    pqfString = segment
+                }
+            }
+            return pqfString
         }
     }
 }
