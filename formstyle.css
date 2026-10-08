@@ -49,3 +49,8 @@ select {
 .menuBar {
     white-space: nowrap;
 }
+
+h2 a {
+  text-decoration: none;
+  color: inherit; /* Adopts the color of the surrounding text */
+}
